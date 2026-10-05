@@ -135,7 +135,7 @@ export function createApp(options: AppOptions) {
         return;
       }
       if (
-        ["/", "/app.js", "/style.css"].includes(path) &&
+        ["/", "/app.js", "/chat-stream.js", "/style.css"].includes(path) &&
         req.method === "GET"
       ) {
         const file = path === "/" ? "index.html" : path.slice(1);

@@ -1,3 +1,4 @@
+import { consumeChatEvents } from "./chat-stream.js";
 const $ = (s) => document.querySelector(s);
 let project = "general",
   chatId = null,
@@ -9,6 +10,11 @@ const api = async (path, options = {}) => {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
   });
+  if (!response.headers.get("content-type")?.includes("application/json")) {
+    throw new Error(
+      "Vortex needs its running backend. A downloaded page or static preview cannot send chat requests.",
+    );
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "Request failed");
   return data;
@@ -30,7 +36,8 @@ function appendMessage(role, text, meta = "") {
   const el = document.createElement("article");
   el.className = `message ${role}`;
   const label = document.createElement("small");
-  label.textContent = role === "user" ? "YOU" : "VORTEX AI";
+  label.textContent =
+    role === "user" ? "YOU" : role === "error" ? "CHAT NOTICE" : "VORTEX AI";
   el.append(label);
   const content = document.createElement("div");
   content.textContent = text;
@@ -43,7 +50,8 @@ function appendMessage(role, text, meta = "") {
   }
   $("#messages").append(el);
   $("#welcome").hidden = true;
-  el.scrollIntoView({ behavior: "smooth", block: "end" });
+  const messages = $("#messages");
+  messages.scrollTop = messages.scrollHeight;
   return el;
 }
 function attachments() {
@@ -130,7 +138,7 @@ async function refresh() {
   $("#settings-info").textContent =
     `Models: ${status.configured ? "Provider key configured; live access unverified" : "API keys needed"} · ${status.storage} · ${status.review}`;
   $("#agent-list").replaceChildren();
-  for (const agent of status.agents) {
+  for (const agent of status.agents.filter((agent) => agent.id !== "fpl")) {
     const card = document.createElement("div");
     card.className = "card";
     const title = document.createElement("strong");
@@ -141,7 +149,9 @@ async function refresh() {
     $("#agent-list").append(card);
   }
   $("#tool-name").replaceChildren();
-  for (const tool of status.tools) {
+  for (const tool of status.tools.filter(
+    (tool) => !tool.name.startsWith("fpl."),
+  )) {
     const option = document.createElement("option");
     option.value = tool.name;
     option.textContent = tool.name;
@@ -252,7 +262,11 @@ $("#composer").onsubmit = async (event) => {
   $("#progress-panel summary").textContent = "Vortex is working";
   const stages = new Map();
   try {
-    const entry = $("#entry").value;
+    if (status?.configured === false) {
+      throw new Error(
+        "Chat setup is incomplete. Add a provider API key in the server settings (.env), then restart Vortex.",
+      );
+    }
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -261,60 +275,43 @@ $("#composer").onsubmit = async (event) => {
         message,
         ...(chatId ? { chatId } : {}),
         fileIds: [...selectedFiles.keys()],
-        ...(entry ? { entry: Number(entry) } : {}),
       }),
     });
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error);
-    }
-    const reader = response.body.getReader(),
-      decoder = new TextDecoder();
-    let buffer = "",
-      resultReceived = false;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      let end;
-      while ((end = buffer.indexOf("\n\n")) !== -1) {
-        const block = buffer.slice(0, end);
-        buffer = buffer.slice(end + 2);
-        const name = block.match(/^event: (.+)$/m)?.[1],
-          dataLine = block.match(/^data: (.+)$/m)?.[1];
-        if (!name || !dataLine) continue;
-        const data = JSON.parse(dataLine);
-        if (name === "chat") chatId = data.id;
-        if (name === "stage") {
-          if (!stages.has(data.stage)) {
-            const line = document.createElement("div");
-            stages.set(data.stage, line);
-            $("#progress").append(line);
-          }
-          stages.get(data.stage).textContent =
-            `${data.state === "complete" ? "✓" : "●"} ${data.stage}${data.detail ? ` · ${data.detail}` : ""}`;
+    let resultReceived = false;
+    await consumeChatEvents(response, (name, data) => {
+      if (name === "chat") chatId = data.id;
+      if (name === "stage") {
+        if (!stages.has(data.stage)) {
+          const line = document.createElement("div");
+          stages.set(data.stage, line);
+          $("#progress").append(line);
         }
-        if (name === "result") {
-          resultReceived = true;
-          appendMessage(
-            "assistant",
-            data.answer,
-            `${data.model} · ${data.route.agent} · ${data.review.reviewer ? `Review ${data.review.accepted ? "accepted" : "rejected"} (${Math.round(data.review.score * 100)}%)` : "Routine answer; not independently reviewed"}`,
-          );
-          $("#progress-panel summary").textContent = "View work details";
-        }
-        if (name === "error")
-          throw new Error(`${data.error} Reference: ${data.requestId}`);
+        stages.get(data.stage).textContent =
+          `${data.state === "complete" ? "✓" : "●"} ${data.stage}${data.detail ? ` · ${data.detail}` : ""}`;
       }
-    }
+      if (name === "result") {
+        resultReceived = true;
+        appendMessage(
+          "assistant",
+          data.answer,
+          `${data.model} · ${data.route.agent} · ${data.review.reviewer ? `Review ${data.review.accepted ? "accepted" : "rejected"} (${Math.round(data.review.score * 100)}%)` : "Routine answer; not independently reviewed"}`,
+        );
+        $("#progress-panel summary").textContent = "View work details";
+      }
+      if (name === "error")
+        throw new Error(
+          `${data.error}${data.requestId ? ` Reference: ${data.requestId}` : ""}`,
+        );
+    });
     if (!resultReceived)
       throw new Error(
         "The connection ended before a verified result arrived. Check the conversation history before retrying.",
       );
     await chats();
   } catch (e) {
-    appendMessage("assistant", e.message);
-    notice(e.message);
+    appendMessage("error", e.message);
+    $("#progress-panel").hidden = stages.size === 0;
+    $("#progress-panel summary").textContent = "Task stopped";
   } finally {
     busy = false;
     $("#send").disabled = false;
@@ -378,6 +375,7 @@ async function init() {
     const saved = JSON.parse(localStorage.getItem("vortex-projects") || "[]");
     for (const item of saved) {
       if (
+        item.value !== "fpl" &&
         /^[a-zA-Z0-9_-]{1,64}$/.test(item.value) &&
         ![...$("#project").options].some((o) => o.value === item.value)
       ) {
@@ -394,6 +392,8 @@ async function init() {
       $("#login").showModal();
     } else await refresh();
   } catch (e) {
+    $("#connection").textContent = "● Offline";
+    $("#connection").classList.add("setup");
     notice(e.message);
   }
 }
@@ -410,3 +410,12 @@ $("#chat-view").ondrop = (e) => {
 init();
 
 $("#mobile-view").onchange = () => show($("#mobile-view").value);
+
+// Keep the app inside the visible viewport when the mobile keyboard opens.
+function sizeViewport() {
+  const height = window.visualViewport?.height ?? window.innerHeight;
+  document.documentElement.style.setProperty("--app-height", `${height}px`);
+}
+window.visualViewport?.addEventListener("resize", sizeViewport);
+window.addEventListener("resize", sizeViewport);
+sizeViewport();

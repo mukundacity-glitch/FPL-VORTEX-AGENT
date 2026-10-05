@@ -1,6 +1,6 @@
 # Tool examples
 
-Open **Agents & tools**, choose a tool and submit JSON. The same validated read tools are available to the complex-task planner.
+Open **Agents & tools** for general-purpose tools. FPL tools are intentionally hidden from the dashboard; invoke them through the authenticated `POST /api/tools` endpoint with `{ "project": "general", "name": "fpl.snapshot", "input": {} }`, or request FPL analysis explicitly in chat. The same validated read tools are available to the complex-task planner.
 
 ## Official FPL snapshot
 

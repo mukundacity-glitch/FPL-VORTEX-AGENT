@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Vortex AI</title>
     <link rel="stylesheet" href="/style.css" />
-    <script src="/app.js" defer></script>
+    <script src="/app.js" type="module"></script>
   </head>
   <body>
     <aside>
@@ -15,7 +15,6 @@
       ><label class="eyebrow" for="project">WORKSPACE</label
       ><select id="project">
         <option value="general">General</option>
-        <option value="fpl">FPL Vortex</option>
         <option value="coding">Coding</option>
       </select>
       <div class="project-create">
@@ -72,10 +71,10 @@
               <span>▤</span><strong>Connect the details</strong
               ><small>Find patterns across your files</small></button
             ><button
-              data-prompt="Analyze the official FPL data and compare captain candidates for the next gameweek."
+              data-prompt="Research this topic using reliable sources and explain what the evidence supports."
             >
-              <span>⚽</span><strong>Find your FPL edge</strong
-              ><small>Bring evidence to the next gameweek</small></button
+              <span>⌕</span><strong>Research a question</strong
+              ><small>Find sources and connect the evidence</small></button
             ><button
               data-prompt="Review my attached code for bugs. Explain the cause and propose a patch and tests."
             >
@@ -102,15 +101,11 @@
             ></textarea>
             <div class="composer-bottom">
               <button type="button" id="upload">＋ Attach files</button
-              ><input id="file-input" type="file" multiple hidden /><label
-                class="entry-label"
-                >FPL entry
-                <input
-                  id="entry"
-                  type="number"
-                  min="1"
-                  placeholder="Optional" /></label
-              ><button id="send" type="submit" aria-label="Send message">
+              ><input id="file-input" type="file" multiple hidden /><button
+                id="send"
+                type="submit"
+                aria-label="Send message"
+              >
                 ↑
               </button>
             </div>
@@ -140,10 +135,7 @@
         <h1>A team behind the answer.</h1>
         <div id="agent-list"></div>
         <h2>Run a tool</h2>
-        <p>
-          Tools use the current project. FPL simulations require your own
-          projections.
-        </p>
+        <p>Tools use evidence within the current project.</p>
         <form id="tool-form">
           <label for="tool-name">Tool</label
           ><select id="tool-name"></select

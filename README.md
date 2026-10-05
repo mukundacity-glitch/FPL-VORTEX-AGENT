@@ -24,8 +24,8 @@ Provider API keys belong only in `.env` or hosting secrets. This application's a
 
 ## Use the workspace
 
-- **Chat:** type a message, attach files and optionally supply a public FPL entry ID. Complex requests plan up to three specialists, run up to three allowlisted read tools, synthesize and pass an independent review. Rejected candidates are withheld from the displayed answer but retained in the private run ledger.
-- **Projects:** choose General, FPL, Coding or create a named project. Conversations, uploaded file text, searchable evidence and run records use the project scope.
+- **Chat:** type a message and attach files. Complex requests plan up to three specialists, run up to three allowlisted read tools, synthesize and pass an independent review. Rejected candidates are withheld from the displayed answer but retained in the private run ledger.
+- **Projects:** choose General, Coding or create a named project. Conversations, uploaded file text, searchable evidence and run records use the project scope.
 - **Files:** upload and select evidence. Extraction warnings explain omissions, sampling and truncation. Delete uploads to remove their file text and indexed evidence.
 - **Agents & tools:** inspect the specialist registry and run validated tools directly. The input is JSON; see [tool examples](docs/TOOLS.md).
 - **Settings:** inspect setup status and delete the current conversation. Model configuration stays on the server.
@@ -50,7 +50,7 @@ Each upload is limited to 10 MiB. Archives allow 200 entries and 30 MiB expanded
 
 ## Tools and FPL
 
-Read tools include `fpl.snapshot`, `fpl.lineup`, `fpl.transfer`, `fpl.simulate`, `github.read` and `memory.search`. An administrator can configure an HTTPS MCP endpoint and an exact read-tool allowlist. Neither the planner nor the tool endpoint can invoke write tools. Managed coding sessions are a separate opt-in capability.
+The dashboard presents general-purpose agents and tools. FPL remains available through explicit requests and the authenticated tool API, without dashboard cards or controls. Backend read tools include `fpl.snapshot`, `fpl.lineup`, `fpl.transfer`, `fpl.simulate`, `github.read` and `memory.search`. An administrator can configure an HTTPS MCP endpoint and an exact read-tool allowlist. Neither the planner nor the tool endpoint can invoke write tools. Managed coding sessions are a separate opt-in capability.
 
 FPL snapshots include provenance, a retrieval timestamp, official next-event expected points and up to eight fixture rounds. Public entry picks are the latest published squad, not pending private transfers. The simulator requires supplied projections; it is explicitly an illustrative uncertainty model. Eight-week forecasting, chip optimization, news feeds and calibrated backtesting remain future work.
 

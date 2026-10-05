@@ -21,7 +21,10 @@ body {
   background: var(--bg);
   color: var(--text);
   display: flex;
-  height: 100dvh;
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
 }
 button,
 input,
@@ -187,6 +190,7 @@ footer button {
 main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -316,7 +320,7 @@ textarea {
   resize: none;
   outline: none;
   min-height: 54px;
-  font-size: 14px;
+  font-size: 16px;
 }
 .composer-bottom {
   display: flex;
@@ -330,15 +334,6 @@ textarea {
   color: #b3a6cf;
   padding: 4px;
   font-size: 12px;
-}
-.entry-label {
-  font-size: 10px;
-  color: var(--muted);
-}
-.entry-label input {
-  width: 80px;
-  font-size: 10px;
-  padding: 5px;
 }
 #send {
   margin-left: auto;
@@ -543,9 +538,6 @@ dialog input {
   .suggestions small {
     font-size: 10px;
   }
-  .entry-label {
-    display: none;
-  }
   #agent-list {
     grid-template-columns: 1fr;
   }
@@ -555,11 +547,12 @@ dialog input {
 }
 @media (max-width: 500px) {
   body {
-    display: block;
+    flex-direction: column;
   }
   aside {
     width: 100%;
     height: auto;
+    flex-shrink: 0;
     padding: 10px;
     gap: 8px;
     flex-direction: row;
@@ -584,7 +577,8 @@ dialog input {
     padding: 6px;
   }
   main {
-    height: calc(100dvh - 55px);
+    flex: 1;
+    min-height: 0;
   }
   .suggestions {
     margin-top: 24px;
@@ -641,5 +635,34 @@ dialog input {
   }
   header {
     padding: 12px;
+  }
+}
+
+#messages,
+#welcome,
+.view {
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+}
+.message.error {
+  background: #29221c;
+  border: 1px solid #655741;
+}
+.message.error small {
+  color: #efdbb9;
+}
+@media (max-height: 500px) {
+  .composer-wrap {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+  .composer-note {
+    display: none;
+  }
+  #message {
+    min-height: 38px;
+  }
+  header {
+    height: 54px;
   }
 }

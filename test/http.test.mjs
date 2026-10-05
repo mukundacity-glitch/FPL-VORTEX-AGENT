@@ -51,6 +51,9 @@ test("static interface and health load", async (t) => {
     /frame-ancestors 'none'/,
   );
   assert.equal((await fetch(`${base}/api/health`)).status, 200);
+  const streamModule = await fetch(`${base}/chat-stream.js`);
+  assert.equal(streamModule.status, 200);
+  assert.match(streamModule.headers.get("content-type"), /javascript/);
 });
 test("private API requires login and credentials stay in HttpOnly cookie", async (t) => {
   const { base } = await app(t, { authToken: token });
