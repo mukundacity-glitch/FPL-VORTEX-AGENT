@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "../types.js";
+import type { AnyToolDefinition } from "../types.js";
 
 export interface GitHubClientOptions {
   token: string;
@@ -73,18 +73,18 @@ function stringField(input: unknown, key: string, required = true): string | und
   return value;
 }
 
-export function createGitHubTools(client: GitHubRestClient): ToolDefinition[] {
+export function createGitHubTools(client: GitHubRestClient): AnyToolDefinition[] {
   return [
     {
       name: "github.read_file",
       description: "Read a UTF-8 text file from an allowlisted GitHub repository.",
       permissions: ["read", "network"],
-      validate: (input) => ({
+      validate: (input: unknown) => ({
         repository: stringField(input, "repository") as string,
         path: stringField(input, "path") as string,
         ref: stringField(input, "ref", false),
       }),
-      execute: async ({ repository, path, ref }) => ({
+      execute: async ({ repository, path, ref }: { repository: string; path: string; ref?: string }) => ({
         ok: true,
         data: await client.readFile(repository, path, ref),
       }),
@@ -93,12 +93,12 @@ export function createGitHubTools(client: GitHubRestClient): ToolDefinition[] {
       name: "github.create_issue",
       description: "Create an issue in an allowlisted GitHub repository.",
       permissions: ["network", "write", "external_side_effect"],
-      validate: (input) => ({
+      validate: (input: unknown) => ({
         repository: stringField(input, "repository") as string,
         title: stringField(input, "title") as string,
         body: stringField(input, "body", false) ?? "",
       }),
-      execute: async ({ repository, title, body }) => ({
+      execute: async ({ repository, title, body }: { repository: string; title: string; body: string }) => ({
         ok: true,
         data: await client.createIssue(repository, title, body),
       }),
