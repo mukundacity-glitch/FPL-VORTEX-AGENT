@@ -1,35 +1,35 @@
 import { PermissionPolicyEngine } from "./permission-policy.js";
 import type {
+  AnyToolDefinition,
   ApprovalHandler,
   ToolContext,
-  ToolDefinition,
   ToolResult,
 } from "./types.js";
 
 export class ToolRegistry {
-  private readonly tools = new Map<string, ToolDefinition>();
+  private readonly tools = new Map<string, AnyToolDefinition>();
 
   public constructor(
     private readonly policy = new PermissionPolicyEngine(),
     private readonly approvalHandler?: ApprovalHandler,
   ) {}
 
-  public register(tool: ToolDefinition): void {
+  public register(tool: AnyToolDefinition): void {
     if (this.tools.has(tool.name)) {
       throw new Error(`Tool ${tool.name} is already registered.`);
     }
     this.tools.set(tool.name, tool);
   }
 
-  public registerMany(tools: readonly ToolDefinition[]): void {
+  public registerMany(tools: readonly AnyToolDefinition[]): void {
     for (const tool of tools) this.register(tool);
   }
 
-  public list(): ToolDefinition[] {
+  public list(): AnyToolDefinition[] {
     return [...this.tools.values()];
   }
 
-  public get(name: string): ToolDefinition | undefined {
+  public get(name: string): AnyToolDefinition | undefined {
     return this.tools.get(name);
   }
 
