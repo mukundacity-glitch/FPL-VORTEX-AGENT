@@ -1,0 +1,70 @@
+name: Ruflo Upstream Watch
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Ruflo main branch
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          RECORDED_SHA="$(tr -d '[:space:]' < .upstream/ruflo.sha)"
+          LATEST_SHA="$(git ls-remote https://github.com/ruvnet/ruflo.git refs/heads/main | awk '{print $1}')"
+
+          if [[ -z "$LATEST_SHA" ]]; then
+            echo "Could not resolve Ruflo main SHA" >&2
+            exit 1
+          fi
+
+          echo "recorded_sha=$RECORDED_SHA" >> "$GITHUB_OUTPUT"
+          echo "latest_sha=$LATEST_SHA" >> "$GITHUB_OUTPUT"
+
+          if [[ "$RECORDED_SHA" == "$LATEST_SHA" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open deduplicated update issue
+        if: steps.upstream.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST_SHA: ${{ steps.upstream.outputs.latest_sha }}
+          RECORDED_SHA: ${{ steps.upstream.outputs.recorded_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TITLE="Ruflo upstream update ${LATEST_SHA}"
+          EXISTING="$(gh issue list --state open --search "${LATEST_SHA} in:title" --json number --jq '.[0].number // empty')"
+
+          if [[ -n "$EXISTING" ]]; then
+            echo "Issue #${EXISTING} already tracks this upstream commit."
+            exit 0
+          fi
+
+          BODY=$(cat <<EOF
+          A newer commit is available on `ruvnet/ruflo`.
+
+          - Recorded baseline: `${RECORDED_SHA}`
+          - New upstream SHA: `${LATEST_SHA}`
+          - Compare: https://github.com/ruvnet/ruflo/compare/${RECORDED_SHA}...${LATEST_SHA}
+
+          Do not copy this update directly into production. Review relevant changes, port useful improvements into an update branch, run FPL VORTEX CI and compatibility tests, then update `.upstream/ruflo.sha` after the reviewed integration is complete.
+          EOF
+          )
+
+          gh issue create --title "$TITLE" --body "$BODY"
