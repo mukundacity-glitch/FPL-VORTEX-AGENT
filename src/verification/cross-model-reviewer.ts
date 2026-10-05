@@ -1,5 +1,6 @@
 import type { AgentTask, ModelResponse, ReviewResult } from "../core/types.js";
 import type { ModelProvider } from "../providers/model-provider.js";
+import type { AnswerReviewer } from "./reviewer.js";
 
 interface ParsedReview {
   accepted: boolean;
@@ -45,17 +46,22 @@ function parseReview(text: string): ParsedReview {
   };
 }
 
-export class CrossModelReviewer {
+export class CrossModelReviewer implements AnswerReviewer {
   public constructor(
     private readonly provider: ModelProvider,
     private readonly minimumScore: number,
-  ) {}
+  ) {
+    if (minimumScore < 0 || minimumScore > 1 || !Number.isFinite(minimumScore)) {
+      throw new Error("minimumScore must be between 0 and 1.");
+    }
+  }
 
   public async review(task: AgentTask, answer: ModelResponse): Promise<ReviewResult> {
     const reviewer = await this.provider.generate({
       systemPrompt: [
-        "You are an independent verification model.",
-        "Check factual grounding, internal consistency, missing constraints, unsafe assumptions, and whether the answer satisfies the stated objective.",
+        "You are the independent verification layer inside Vortex AI.",
+        "Evaluate factual grounding, internal consistency, missing constraints, unsafe assumptions, and whether the answer satisfies the objective.",
+        "For coding work, also check likely regressions, tests, error handling, and whether the answer addresses root cause rather than symptoms.",
         "Return ONLY strict JSON with this exact shape:",
         '{"accepted":true,"score":0.95,"reasons":["reason"]}',
         "score must be between 0 and 1.",
@@ -63,12 +69,13 @@ export class CrossModelReviewer {
       userPrompt: [
         `TASK: ${task.objective}`,
         `AGENT: ${task.agent}`,
+        `DOMAIN: ${task.domain ?? "auto"}`,
         `CONTEXT: ${JSON.stringify(task.context)}`,
         `CANDIDATE_PROVIDER: ${answer.provider}`,
         `CANDIDATE_MODEL: ${answer.model}`,
         `CANDIDATE_ANSWER:\n${answer.text}`,
       ].join("\n\n"),
-      maxOutputTokens: 1200,
+      maxOutputTokens: 1_500,
       temperature: 0,
     });
 
