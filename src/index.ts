@@ -1,8 +1,6 @@
 import { loadRuntimeConfig } from "./config/runtime.js";
-import { TaskOrchestrator } from "./core/orchestrator.js";
 import type { AgentTask } from "./core/types.js";
-import { createProvider } from "./providers/factory.js";
-import { CrossModelReviewer } from "./verification/cross-model-reviewer.js";
+import { createVortexCore } from "./core/vortex-core.js";
 
 function buildTaskFromCli(): AgentTask {
   const objective = process.argv.slice(2).join(" ").trim();
@@ -14,7 +12,7 @@ function buildTaskFromCli(): AgentTask {
 
   return {
     id: crypto.randomUUID(),
-    agent: "general-fpl-reasoner",
+    agent: "vortex-general-reasoner",
     objective,
     context: {},
     priority: "deep",
@@ -24,17 +22,8 @@ function buildTaskFromCli(): AgentTask {
 
 async function main(): Promise<void> {
   const config = loadRuntimeConfig();
-  const primary = createProvider(config.primaryProvider, "primary", config);
-
-  const reviewer = config.enableCrossModelReview
-    ? new CrossModelReviewer(
-        createProvider(config.reviewProvider, "review", config),
-        config.minReviewScore,
-      )
-    : undefined;
-
-  const orchestrator = new TaskOrchestrator(primary, reviewer);
-  const result = await orchestrator.run(buildTaskFromCli());
+  const vortex = createVortexCore(config);
+  const result = await vortex.run(buildTaskFromCli());
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (!result.review.accepted) {
@@ -44,6 +33,6 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`FPL VORTEX AGENT failed: ${message}\n`);
+  process.stderr.write(`Vortex AI failed: ${message}\n`);
   process.exitCode = 1;
 });
