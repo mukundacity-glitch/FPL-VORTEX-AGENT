@@ -27,6 +27,8 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
   execute: (input: TInput, context: ToolContext) => Promise<ToolResult<TOutput>>;
 }
 
+export type AnyToolDefinition = ToolDefinition<any, any>;
+
 export type ApprovalDecision = "allow_once" | "deny";
 
 export interface ApprovalRequest {
