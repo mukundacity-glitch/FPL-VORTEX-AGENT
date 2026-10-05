@@ -1,0 +1,25 @@
+name: Dependency and Model Report
+on:
+  schedule:
+    - cron: "41 9 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run updates:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vortex-update-report
+          path: .vortex/update-report.json
+          include-hidden-files: true
+          retention-days: 14

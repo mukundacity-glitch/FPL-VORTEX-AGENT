@@ -16,7 +16,7 @@ export class OpenAIAgentProvider implements ModelProvider {
     if (!apiKey.trim()) {
       throw new Error("OPENAI_API_KEY is required.");
     }
-    this.client = new OpenAI({ apiKey });
+    this.client = new OpenAI({ apiKey, timeout: 120000, maxRetries: 1 });
   }
 
   public async generate(request: ModelRequest): Promise<ModelResponse> {
@@ -39,7 +39,9 @@ export class OpenAIAgentProvider implements ModelProvider {
       const result = await events.finalResult();
       const text = result.output_text?.trim();
       if (!text) {
-        throw new Error(`OpenAI agent model ${this.model} returned no text output.`);
+        throw new Error(
+          `OpenAI agent model ${this.model} returned no text output.`,
+        );
       }
 
       return {

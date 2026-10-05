@@ -13,9 +13,14 @@ export class TaskOrchestrator {
       throw new Error("Task objective cannot be empty.");
     }
 
+    if (task.requireReview) {
+      if (!this.reviewer)
+        throw new Error("Task requires review but no reviewer is configured.");
+      this.reviewer.assertIndependent(this.primary);
+    }
     const candidate = await this.primary.generate({
       systemPrompt: [
-        `You are the ${task.agent} agent inside FPL VORTEX AGENT.`,
+        `You are the ${task.agent} agent inside Vortex AI.`,
         "Use supplied evidence carefully. Distinguish facts from inference.",
         "Do not invent unavailable data. Prefer quantified reasoning when the evidence supports it.",
         "Return a decisive answer that directly satisfies the objective.",

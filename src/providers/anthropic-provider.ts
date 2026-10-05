@@ -16,7 +16,7 @@ export class AnthropicProvider implements ModelProvider {
     if (!apiKey.trim()) {
       throw new Error("ANTHROPIC_API_KEY is required.");
     }
-    this.client = new Anthropic({ apiKey });
+    this.client = new Anthropic({ apiKey, timeout: 120000, maxRetries: 1 });
   }
 
   public async generate(request: ModelRequest): Promise<ModelResponse> {
@@ -25,9 +25,6 @@ export class AnthropicProvider implements ModelProvider {
       max_tokens: request.maxOutputTokens ?? 4096,
       system: request.systemPrompt,
       messages: [{ role: "user", content: request.userPrompt }],
-      ...(request.temperature === undefined
-        ? {}
-        : { temperature: request.temperature }),
     });
 
     const text = message.content

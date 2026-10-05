@@ -9,6 +9,7 @@ export class OpenAIProvider implements ModelProvider {
   public constructor(
     public readonly model: string,
     apiKey: string,
+    private readonly webSearch = false,
   ) {
     if (!model.trim()) {
       throw new Error("OpenAI model is required.");
@@ -16,7 +17,7 @@ export class OpenAIProvider implements ModelProvider {
     if (!apiKey.trim()) {
       throw new Error("OPENAI_API_KEY is required.");
     }
-    this.client = new OpenAI({ apiKey });
+    this.client = new OpenAI({ apiKey, timeout: 120000, maxRetries: 1 });
   }
 
   public async generate(request: ModelRequest): Promise<ModelResponse> {
@@ -24,12 +25,10 @@ export class OpenAIProvider implements ModelProvider {
       model: this.model,
       instructions: request.systemPrompt,
       input: request.userPrompt,
+      ...(this.webSearch ? { tools: [{ type: "web_search" as const }] } : {}),
       ...(request.maxOutputTokens === undefined
         ? {}
         : { max_output_tokens: request.maxOutputTokens }),
-      ...(request.temperature === undefined
-        ? {}
-        : { temperature: request.temperature }),
     });
 
     const text = response.output_text?.trim();
