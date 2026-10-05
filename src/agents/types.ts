@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolResult } from "../tools/types.js";
+import type { AnyToolDefinition, ToolResult } from "../tools/types.js";
 
 export interface AgentDefinition {
   id: string;
@@ -24,7 +24,7 @@ export interface AgentBrainInput {
   definition: AgentDefinition;
   objective: string;
   context: Readonly<Record<string, unknown>>;
-  tools: readonly ToolDefinition[];
+  tools: readonly AnyToolDefinition[];
   history: readonly AgentHistoryEntry[];
 }
 
