@@ -13,20 +13,21 @@ export function createProvider(
   config: RuntimeConfig,
 ): ModelProvider {
   if (provider === "openai") {
-    const model = role === "primary"
-      ? config.openai.primaryModel
-      : config.openai.reviewModel;
-    const mode = role === "primary"
-      ? config.openai.primaryMode
-      : config.openai.reviewMode;
+    const model =
+      role === "primary"
+        ? config.openai.primaryModel
+        : config.openai.reviewModel;
+    const mode =
+      role === "primary" ? config.openai.primaryMode : config.openai.reviewMode;
 
     return mode === "agents"
       ? new OpenAIAgentProvider(model, config.openai.apiKey)
       : new OpenAIProvider(model, config.openai.apiKey);
   }
 
-  const model = role === "primary"
-    ? config.anthropic.primaryModel
-    : config.anthropic.reviewModel;
+  const model =
+    role === "primary"
+      ? config.anthropic.primaryModel
+      : config.anthropic.reviewModel;
   return new AnthropicProvider(model, config.anthropic.apiKey);
 }

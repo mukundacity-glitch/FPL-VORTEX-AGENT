@@ -18,7 +18,7 @@ function buildTaskFromCli(): AgentTask {
     objective,
     context: {},
     priority: "deep",
-    requireReview: true,
+    requireReview: loadRuntimeConfig().enableCrossModelReview,
   };
 }
 

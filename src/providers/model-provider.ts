@@ -1,4 +1,8 @@
-import type { ModelRequest, ModelResponse, ProviderName } from "../core/types.js";
+import type {
+  ModelRequest,
+  ModelResponse,
+  ProviderName,
+} from "../core/types.js";
 
 export interface ModelProvider {
   readonly name: ProviderName;

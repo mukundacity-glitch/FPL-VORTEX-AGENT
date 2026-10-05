@@ -24,16 +24,16 @@ function parseReview(text: string): ParsedReview {
     throw new Error("Reviewer JSON is missing boolean accepted.");
   }
   if (
-    typeof candidate.score !== "number"
-    || !Number.isFinite(candidate.score)
-    || candidate.score < 0
-    || candidate.score > 1
+    typeof candidate.score !== "number" ||
+    !Number.isFinite(candidate.score) ||
+    candidate.score < 0 ||
+    candidate.score > 1
   ) {
     throw new Error("Reviewer score must be a number between 0 and 1.");
   }
   if (
-    !Array.isArray(candidate.reasons)
-    || !candidate.reasons.every((reason) => typeof reason === "string")
+    !Array.isArray(candidate.reasons) ||
+    !candidate.reasons.every((reason) => typeof reason === "string")
   ) {
     throw new Error("Reviewer reasons must be an array of strings.");
   }
@@ -49,9 +49,25 @@ export class CrossModelReviewer {
   public constructor(
     private readonly provider: ModelProvider,
     private readonly minimumScore: number,
-  ) {}
+  ) {
+    if (!Number.isFinite(minimumScore) || minimumScore < 0 || minimumScore > 1)
+      throw new Error("Review threshold must be between zero and one.");
+  }
 
-  public async review(task: AgentTask, answer: ModelResponse): Promise<ReviewResult> {
+  public assertIndependent(primary: ModelProvider): void {
+    if (
+      primary.name === this.provider.name &&
+      primary.model === this.provider.model
+    )
+      throw new Error(
+        "Independent review requires a different provider or model.",
+      );
+  }
+
+  public async review(
+    task: AgentTask,
+    answer: ModelResponse,
+  ): Promise<ReviewResult> {
     const reviewer = await this.provider.generate({
       systemPrompt: [
         "You are an independent verification model.",
@@ -69,7 +85,6 @@ export class CrossModelReviewer {
         `CANDIDATE_ANSWER:\n${answer.text}`,
       ].join("\n\n"),
       maxOutputTokens: 1200,
-      temperature: 0,
     });
 
     const parsed = parseReview(reviewer.text);

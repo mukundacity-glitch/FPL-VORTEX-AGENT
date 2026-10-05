@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vortex AI</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <aside>
+      <a class="brand" href="/" aria-label="Vortex AI home"
+        ><span class="logo">◈</span> VORTEX <span class="muted">AI</span></a
+      ><button id="new-chat" class="new">＋ New chat</button
+      ><label class="eyebrow" for="project">WORKSPACE</label
+      ><select id="project">
+        <option value="general">General</option>
+        <option value="fpl">FPL Vortex</option>
+        <option value="coding">Coding</option>
+      </select>
+      <div class="project-create">
+        <input
+          id="project-name"
+          aria-label="New project name"
+          placeholder="New project"
+        /><button id="add-project" aria-label="Create project">＋</button>
+      </div>
+      <nav>
+        <button data-view="chat" class="active">◌ Chat</button
+        ><button data-view="files">▤ Files</button
+        ><button data-view="agents">◇ Agents & tools</button
+        ><button data-view="settings">⚙ Settings</button>
+      </nav>
+      <p class="eyebrow">RECENT CHATS</p>
+      <div id="chats"></div>
+      <footer>
+        <span class="avatar">V</span>
+        <div>Personal workspace<small>Vortex AI · foundation</small></div>
+        <button id="logout" aria-label="Sign out">↗</button>
+      </footer>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <strong id="page-title">New conversation</strong
+          ><span id="project-label">General workspace</span>
+        </div>
+        <select id="mobile-view" aria-label="Navigation">
+          <option value="chat">Chat</option>
+          <option value="files">Files</option>
+          <option value="agents">Agents</option>
+          <option value="settings">Settings</option></select
+        ><span id="connection" class="status">● Checking</span>
+      </header>
+      <section id="chat-view" class="view">
+        <div id="welcome">
+          <div class="hero-logo">◈</div>
+          <p class="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</p>
+          <h1>What can we solve?</h1>
+          <p class="subtitle">
+            Think deeper. Connect your files. Build something better.
+          </p>
+          <div class="suggestions">
+            <button
+              data-prompt="Help me plan a project. Start by asking what I want to build."
+            >
+              <span>✦</span><strong>Explore an idea</strong
+              ><small>Turn a question into a clear next step</small></button
+            ><button
+              data-prompt="Compare my attached documents and identify contradictions. Cite each filename."
+            >
+              <span>▤</span><strong>Connect the details</strong
+              ><small>Find patterns across your files</small></button
+            ><button
+              data-prompt="Analyze the official FPL data and compare captain candidates for the next gameweek."
+            >
+              <span>⚽</span><strong>Find your FPL edge</strong
+              ><small>Bring evidence to the next gameweek</small></button
+            ><button
+              data-prompt="Review my attached code for bugs. Explain the cause and propose a patch and tests."
+            >
+              <span>⌘</span><strong>Work through code</strong
+              ><small>Investigate, explain, and improve</small>
+            </button>
+          </div>
+        </div>
+        <div id="messages" aria-live="polite"></div>
+        <details id="progress-panel" hidden>
+          <summary>Vortex is working</summary>
+          <div id="progress"></div>
+        </details>
+        <div class="composer-wrap">
+          <div id="attachments"></div>
+          <form id="composer">
+            <textarea
+              id="message"
+              aria-label="Message Vortex"
+              placeholder="Ask Vortex anything…"
+              rows="2"
+              maxlength="12000"
+              required
+            ></textarea>
+            <div class="composer-bottom">
+              <button type="button" id="upload">＋ Attach files</button
+              ><input id="file-input" type="file" multiple hidden /><label
+                class="entry-label"
+                >FPL entry
+                <input
+                  id="entry"
+                  type="number"
+                  min="1"
+                  placeholder="Optional" /></label
+              ><button id="send" type="submit" aria-label="Send message">
+                ↑
+              </button>
+            </div>
+          </form>
+          <p class="composer-note">
+            Complex answers receive an independent review. Check important
+            conclusions against the evidence.
+          </p>
+        </div>
+      </section>
+      <section id="files-view" class="view panel" hidden>
+        <p class="eyebrow">PROJECT KNOWLEDGE</p>
+        <h1>Your files, connected.</h1>
+        <p>
+          Upload documents, spreadsheets, code, images, audio or video. Select
+          files to include in your next message.
+        </p>
+        <button id="upload-files" class="new">＋ Upload files</button>
+        <div id="file-list"></div>
+        <p class="muted">
+          10 MiB per file. Media needs OpenAI credentials; video also needs
+          ffmpeg. Unsupported formats return an explanation.
+        </p>
+      </section>
+      <section id="agents-view" class="view panel" hidden>
+        <p class="eyebrow">SPECIALIST INTELLIGENCE</p>
+        <h1>A team behind the answer.</h1>
+        <div id="agent-list"></div>
+        <h2>Run a tool</h2>
+        <p>
+          Tools use the current project. FPL simulations require your own
+          projections.
+        </p>
+        <form id="tool-form">
+          <label for="tool-name">Tool</label
+          ><select id="tool-name"></select
+          ><label for="tool-input">JSON input</label
+          ><textarea id="tool-input" rows="8">{}</textarea
+          ><button class="new" type="submit">Run tool</button>
+        </form>
+        <pre id="tool-result"></pre>
+      </section>
+      <section id="settings-view" class="view panel" hidden>
+        <p class="eyebrow">YOUR WORKSPACE</p>
+        <h1>Keep control.</h1>
+        <div id="settings-info"></div>
+        <p>
+          Set model IDs and provider keys in the server’s .env file. Keys stay
+          on the server.
+        </p>
+        <p>
+          Conversation and file text are stored in SQLite on this device. Each
+          project has its own memory scope.
+        </p>
+        <button id="delete-chat" class="danger">
+          Delete current conversation
+        </button>
+      </section>
+      <div id="notice" role="status" hidden></div>
+    </main>
+    <dialog id="login">
+      <form id="login-form">
+        <div class="hero-logo">◈</div>
+        <h2>Welcome to Vortex AI</h2>
+        <p>Enter your workspace access token.</p>
+        <input
+          id="token"
+          type="password"
+          aria-label="Access token"
+          autocomplete="current-password"
+          required
+        /><button class="new" type="submit">Open workspace</button>
+        <p id="login-error" role="alert"></p>
+      </form>
+    </dialog>
+  </body>
+</html>

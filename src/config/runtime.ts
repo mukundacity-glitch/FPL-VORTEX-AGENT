@@ -61,13 +61,16 @@ export function loadRuntimeConfig(): RuntimeConfig {
   return {
     primaryProvider: parseProvider(env("PRIMARY_PROVIDER"), "anthropic"),
     reviewProvider: parseProvider(env("REVIEW_PROVIDER"), "openai"),
-    enableCrossModelReview: parseBoolean(env("ENABLE_CROSS_MODEL_REVIEW"), true),
+    enableCrossModelReview: parseBoolean(
+      env("ENABLE_CROSS_MODEL_REVIEW"),
+      true,
+    ),
     minReviewScore: parseScore(env("MIN_REVIEW_SCORE"), 0.8),
     openai: {
       apiKey: env("OPENAI_API_KEY"),
       primaryModel: env("OPENAI_PRIMARY_MODEL") || "gpt-6-astra",
       reviewModel: env("OPENAI_REVIEW_MODEL") || "gpt-6-astra",
-      primaryMode: parseOpenAIMode(env("OPENAI_PRIMARY_MODE"), "agents"),
+      primaryMode: parseOpenAIMode(env("OPENAI_PRIMARY_MODE"), "responses"),
       reviewMode: parseOpenAIMode(env("OPENAI_REVIEW_MODE"), "responses"),
     },
     anthropic: {

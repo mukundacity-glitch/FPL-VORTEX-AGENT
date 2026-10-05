@@ -1,24 +1,36 @@
 {
-  "name": "fpl-vortex-agent",
-  "version": "0.1.0",
+  "name": "vortex-ai",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "start": "node dist/index.js",
-    "test": "node --test",
-    "check": "npm run typecheck && npm run build && npm test"
+    "start": "node --env-file-if-exists=.env dist/web/main.js",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "cli": "node --env-file-if-exists=.env dist/index.js",
+    "dev": "npm run build && npm start",
+    "updates:check": "node --env-file-if-exists=.env scripts/check-updates.mjs",
+    "backup": "node --env-file-if-exists=.env scripts/backup.mjs",
+    "format": "prettier --write src public test scripts docs README.md package.json .github",
+    "format:check": "prettier --check src public test scripts docs README.md package.json .github"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0",
-    "openai": "7.28.0"
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "fast-xml-parser": "^5.11.2",
+    "fflate": "^0.8.3",
+    "openai": "7.28.0",
+    "pdfjs-dist": "^6.4.299",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "latest",
+    "prettier": "3.9.9",
     "typescript": "7.0.2"
   }
 }

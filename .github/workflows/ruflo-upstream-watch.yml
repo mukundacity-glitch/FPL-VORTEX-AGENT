@@ -56,15 +56,18 @@ jobs:
             exit 0
           fi
 
-          BODY=$(cat <<EOF
-          A newer commit is available on `ruvnet/ruflo`.
-
-          - Recorded baseline: `${RECORDED_SHA}`
-          - New upstream SHA: `${LATEST_SHA}`
-          - Compare: https://github.com/ruvnet/ruflo/compare/${RECORDED_SHA}...${LATEST_SHA}
-
-          Do not copy this update directly into production. Review relevant changes, port useful improvements into an update branch, run FPL VORTEX CI and compatibility tests, then update `.upstream/ruflo.sha` after the reviewed integration is complete.
-          EOF
-          )
-
-          gh issue create --title "$TITLE" --body "$BODY"
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const { RECORDED_SHA, LATEST_SHA } = process.env;
+          const body = [
+            'A newer commit is available on ruvnet/ruflo.',
+            '',
+            `- Recorded baseline: ${RECORDED_SHA}`,
+            `- New upstream SHA: ${LATEST_SHA}`,
+            `- Compare: https://github.com/ruvnet/ruflo/compare/${RECORDED_SHA}...${LATEST_SHA}`,
+            '',
+            'Review relevant changes on an update branch. Run Vortex CI, compatibility tests and regression evaluations before promotion. Update .upstream/ruflo.sha only after integration is verified.'
+          ].join('\n');
+          writeFileSync('upstream-update-body.md', body);
+          NODE
+          gh issue create --title "$TITLE" --body-file upstream-update-body.md
