@@ -2,6 +2,7 @@ import type { RuntimeConfig } from "../config/runtime.js";
 import type { ProviderName } from "../core/types.js";
 import { AnthropicProvider } from "./anthropic-provider.js";
 import type { ModelProvider } from "./model-provider.js";
+import { OpenAIAgentProvider } from "./openai-agent-provider.js";
 import { OpenAIProvider } from "./openai-provider.js";
 
 export type ProviderRole = "primary" | "review";
@@ -14,12 +15,18 @@ export function createProvider(
   if (provider === "openai") {
     const model = role === "primary"
       ? config.openai.primaryModel
-      : config.openai.reviewModel || config.openai.primaryModel;
-    return new OpenAIProvider(model, config.openai.apiKey);
+      : config.openai.reviewModel;
+    const mode = role === "primary"
+      ? config.openai.primaryMode
+      : config.openai.reviewMode;
+
+    return mode === "agents"
+      ? new OpenAIAgentProvider(model, config.openai.apiKey)
+      : new OpenAIProvider(model, config.openai.apiKey);
   }
 
   const model = role === "primary"
     ? config.anthropic.primaryModel
-    : config.anthropic.reviewModel || config.anthropic.primaryModel;
+    : config.anthropic.reviewModel;
   return new AnthropicProvider(model, config.anthropic.apiKey);
 }
