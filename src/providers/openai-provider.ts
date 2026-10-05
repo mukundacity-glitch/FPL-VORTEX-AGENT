@@ -37,15 +37,19 @@ export class OpenAIProvider implements ModelProvider {
       throw new Error(`OpenAI model ${this.model} returned no text output.`);
     }
 
+    const usage = response.usage
+      ? {
+          inputTokens: response.usage.input_tokens,
+          outputTokens: response.usage.output_tokens,
+        }
+      : undefined;
+
     return {
       provider: this.name,
       model: this.model,
       text,
       requestId: response.id,
-      usage: {
-        inputTokens: response.usage?.input_tokens,
-        outputTokens: response.usage?.output_tokens,
-      },
+      ...(usage === undefined ? {} : { usage }),
     };
   }
 }
