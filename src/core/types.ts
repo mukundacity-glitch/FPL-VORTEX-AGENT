@@ -1,6 +1,8 @@
 export type ProviderName = "openai" | "anthropic";
 
 export type AgentPriority = "fast" | "balanced" | "deep";
+export type TaskDomain = "general" | "coding" | "research" | "analysis" | "fpl";
+export type TaskComplexity = "simple" | "moderate" | "complex";
 
 export interface AgentTask {
   id: string;
@@ -9,6 +11,7 @@ export interface AgentTask {
   context: Readonly<Record<string, unknown>>;
   priority: AgentPriority;
   requireReview: boolean;
+  domain?: TaskDomain;
 }
 
 export interface ModelRequest {
@@ -36,9 +39,32 @@ export interface ReviewResult {
   reviewer?: ModelResponse;
 }
 
+export interface TaskPlan {
+  domain: TaskDomain;
+  complexity: TaskComplexity;
+  preferredProvider: ProviderName;
+  fallbackProvider: ProviderName;
+  steps: string[];
+  maxAttempts: number;
+}
+
+export interface ExecutionAttempt {
+  attempt: number;
+  provider: ProviderName;
+  model?: string;
+  startedAt: string;
+  completedAt: string;
+  accepted: boolean;
+  error?: string;
+  reviewScore?: number;
+  reviewReasons?: string[];
+}
+
 export interface AgentRunResult {
   task: AgentTask;
+  plan: TaskPlan;
   candidate: ModelResponse;
   review: ReviewResult;
+  attempts: ExecutionAttempt[];
   completedAt: string;
 }
