@@ -1,5 +1,6 @@
 import type {
   AgentTask,
+  ProviderName,
   TaskComplexity,
   TaskDomain,
   TaskPlan,
@@ -108,6 +109,8 @@ function buildSteps(domain: TaskDomain, requireReview: boolean): string[] {
 }
 
 export class TaskPlanner {
+  public constructor(private readonly defaultProvider: ProviderName = "anthropic") {}
+
   public plan(task: AgentTask): TaskPlan {
     if (!task.objective.trim()) {
       throw new Error("Task objective cannot be empty.");
@@ -115,7 +118,11 @@ export class TaskPlanner {
 
     const domain = inferDomain(task);
     const complexity = inferComplexity(task);
-    const preferredProvider = domain === "coding" ? "openai" : "anthropic";
+    const preferredProvider = domain === "coding"
+      ? "openai"
+      : domain === "general"
+        ? this.defaultProvider
+        : "anthropic";
 
     return {
       domain,
