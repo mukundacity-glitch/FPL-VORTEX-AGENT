@@ -1,5 +1,7 @@
 import type { ProviderName } from "../core/types.js";
 
+export type OpenAIExecutionMode = "responses" | "agents";
+
 export interface RuntimeConfig {
   primaryProvider: ProviderName;
   reviewProvider: ProviderName;
@@ -9,6 +11,8 @@ export interface RuntimeConfig {
     apiKey: string;
     primaryModel: string;
     reviewModel: string;
+    primaryMode: OpenAIExecutionMode;
+    reviewMode: OpenAIExecutionMode;
   };
   anthropic: {
     apiKey: string;
@@ -26,6 +30,15 @@ function parseProvider(value: string, fallback: ProviderName): ProviderName {
   if (!value) return fallback;
   if (value === "openai" || value === "anthropic") return value;
   throw new Error(`${value} is not a supported provider.`);
+}
+
+function parseOpenAIMode(
+  value: string,
+  fallback: OpenAIExecutionMode,
+): OpenAIExecutionMode {
+  if (!value) return fallback;
+  if (value === "responses" || value === "agents") return value;
+  throw new Error(`${value} is not a supported OpenAI execution mode.`);
 }
 
 function parseBoolean(value: string, fallback: boolean): boolean {
@@ -46,19 +59,21 @@ function parseScore(value: string, fallback: number): number {
 
 export function loadRuntimeConfig(): RuntimeConfig {
   return {
-    primaryProvider: parseProvider(env("PRIMARY_PROVIDER"), "openai"),
-    reviewProvider: parseProvider(env("REVIEW_PROVIDER"), "anthropic"),
+    primaryProvider: parseProvider(env("PRIMARY_PROVIDER"), "anthropic"),
+    reviewProvider: parseProvider(env("REVIEW_PROVIDER"), "openai"),
     enableCrossModelReview: parseBoolean(env("ENABLE_CROSS_MODEL_REVIEW"), true),
     minReviewScore: parseScore(env("MIN_REVIEW_SCORE"), 0.8),
     openai: {
       apiKey: env("OPENAI_API_KEY"),
-      primaryModel: env("OPENAI_PRIMARY_MODEL"),
-      reviewModel: env("OPENAI_REVIEW_MODEL"),
+      primaryModel: env("OPENAI_PRIMARY_MODEL") || "gpt-6-astra",
+      reviewModel: env("OPENAI_REVIEW_MODEL") || "gpt-6-astra",
+      primaryMode: parseOpenAIMode(env("OPENAI_PRIMARY_MODE"), "agents"),
+      reviewMode: parseOpenAIMode(env("OPENAI_REVIEW_MODE"), "responses"),
     },
     anthropic: {
       apiKey: env("ANTHROPIC_API_KEY"),
-      primaryModel: env("ANTHROPIC_PRIMARY_MODEL"),
-      reviewModel: env("ANTHROPIC_REVIEW_MODEL"),
+      primaryModel: env("ANTHROPIC_PRIMARY_MODEL") || "claude-fable-5-1",
+      reviewModel: env("ANTHROPIC_REVIEW_MODEL") || "claude-opus-5-5",
     },
     fplBaseUrl: env("FPL_BASE_URL") || "https://fantasy.premierleague.com/api",
   };
