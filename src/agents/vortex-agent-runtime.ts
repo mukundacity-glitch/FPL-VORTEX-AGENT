@@ -19,7 +19,7 @@ export interface VortexAgentRuntimeOptions {
 export class VortexAgentRuntime {
   public readonly registry: ToolRegistry;
   public readonly parallel: ParallelAgentRunner;
-  private readonly memoryEnricher?: MemoryContextEnricher;
+  private readonly memoryEnricher: MemoryContextEnricher | undefined;
 
   public constructor(options: VortexAgentRuntimeOptions = {}) {
     this.registry = new ToolRegistry(
