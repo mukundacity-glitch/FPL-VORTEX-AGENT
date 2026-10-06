@@ -61,11 +61,47 @@ export type {
   AgentAction,
   AgentBrain,
   AgentBrainInput,
+  AgentContextEnricher,
   AgentDefinition,
   AgentExecutionResult,
   AgentExecutor,
   AgentHistoryEntry,
+  AgentMemoryContext,
   AgentRunInput,
   AgentStep,
 } from "./agents/types.js";
 export type { ParallelAgentRequest } from "./agents/parallel-agent-runner.js";
+
+export { InMemoryMemoryStore } from "./memory/memory-store.js";
+export type { MemoryStore } from "./memory/memory-store.js";
+export { JsonMemoryStore } from "./memory/json-memory-store.js";
+export {
+  LocalTokenEmbeddingProvider,
+  OpenAIEmbeddingProvider,
+} from "./memory/embedding-provider.js";
+export type { EmbeddingProvider } from "./memory/embedding-provider.js";
+export { MemoryRetriever } from "./memory/memory-retriever.js";
+export { VortexMemory } from "./memory/vortex-memory.js";
+export { KnowledgeIngestor } from "./memory/knowledge-ingestor.js";
+export type { KnowledgeIngestorOptions } from "./memory/knowledge-ingestor.js";
+export { MemoryContextEnricher } from "./memory/memory-context-enricher.js";
+export {
+  AgentExperienceRecorder,
+  ConversationMemoryRecorder,
+} from "./memory/memory-recorders.js";
+export type {
+  AgentExperienceInput,
+  ConversationTurnInput,
+} from "./memory/memory-recorders.js";
+export type {
+  KnowledgeDocument,
+  KnowledgeIngestResult,
+  MemoryAddress,
+  MemoryContextOptions,
+  MemoryFilter,
+  MemoryQuery,
+  MemoryRecord,
+  MemoryScope,
+  MemorySearchResult,
+  MemoryWriteInput,
+} from "./memory/types.js";
