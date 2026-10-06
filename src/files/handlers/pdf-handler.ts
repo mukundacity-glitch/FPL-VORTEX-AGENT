@@ -38,7 +38,7 @@ export class PdfFileHandler implements FileHandler {
         }
       }
     } finally {
-      await pdf.destroy();
+      await loading.destroy();
     }
 
     return {
