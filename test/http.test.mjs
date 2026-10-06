@@ -222,3 +222,23 @@ test("media setup errors and input validation are actionable", async (t) => {
   assert.equal(response.status, 503);
   assert.match((await response.json()).error, /OPENAI_API_KEY/);
 });
+
+test("chat reports exhausted API credits without exposing provider payload", async (t) => {
+  const { base } = await app(t, {
+    engine: {
+      run: async () => {
+        const error = new Error("private-provider-payload");
+        error.status = 429;
+        error.code = "credit_balance_exhausted";
+        throw error;
+      },
+    },
+  });
+  const response = await fetch(
+    `${base}/api/chat`,
+    post({ message: "Hello", project: "general" }),
+  );
+  const events = await response.text();
+  assert.match(events, /no available credits/);
+  assert(!events.includes("private-provider-payload"));
+});

@@ -1,3 +1,4 @@
+import { providerErrorMessage } from "../providers/errors.js";
 import OpenAI from "openai";
 import type { Store, Scope } from "../memory/store.js";
 export type MediaKind = "image" | "video";
@@ -85,7 +86,10 @@ function safeError(error: unknown): string {
   if (status === 403 || status === 404)
     return "This model is unavailable to your API account. Check model access and server settings.";
   if (status === 429)
-    return "The provider quota or rate limit was reached. Check API billing and limits.";
+    return providerErrorMessage(
+      error,
+      "The provider quota or rate limit was reached. Check API billing and limits.",
+    );
   if (status === 400)
     return "The provider rejected this prompt or generation settings. Try a different prompt.";
   return "Generation could not be completed. Check provider access and connection. It was not automatically retried.";

@@ -1,3 +1,4 @@
+import { providerErrorMessage } from "../providers/errors.js";
 import { GenerationService, publicGeneration } from "../media/generation.js";
 import {
   createServer,
@@ -485,8 +486,10 @@ export function createApp(options: AppOptions) {
             }),
           );
           event("error", {
-            error:
+            error: providerErrorMessage(
+              error,
               "Task failed. Check provider configuration, available models, and supplied evidence. No verified answer was saved.",
+            ),
             requestId,
           });
         } finally {
