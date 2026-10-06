@@ -137,3 +137,55 @@ export type {
   VisionAnalyzer,
   VisionResult,
 } from "./files/types.js";
+
+export { FplApiClient } from "./fpl/fpl-api-client.js";
+export { FplProjectionEngine } from "./fpl/projection-engine.js";
+export type { ProjectionEngineOptions } from "./fpl/projection-engine.js";
+export { LineupOptimizer } from "./fpl/lineup-optimizer.js";
+export { CaptainEngine } from "./fpl/captain-engine.js";
+export type { CaptainMode } from "./fpl/captain-engine.js";
+export { TransferOptimizer } from "./fpl/transfer-optimizer.js";
+export type { TransferOptimizerOptions } from "./fpl/transfer-optimizer.js";
+export { SquadOptimizer } from "./fpl/squad-optimizer.js";
+export type { OptimizedSquad, SquadOptimizerOptions } from "./fpl/squad-optimizer.js";
+export { ChipPlanner } from "./fpl/chip-planner.js";
+export type { ChipPlannerInput } from "./fpl/chip-planner.js";
+export { FplMonteCarloSimulator } from "./fpl/simulator.js";
+export { PriceTracker } from "./fpl/price-tracker.js";
+export { ProjectionBacktester } from "./fpl/backtester.js";
+export type { BacktestObservation } from "./fpl/backtester.js";
+export { FplDataValidator } from "./fpl/data-validator.js";
+export type { FplDataValidation } from "./fpl/data-validator.js";
+export { BootstrapNewsSignalProvider, FplSignalAggregator } from "./fpl/signals.js";
+export type { FplSignal, FplSignalKind, FplSignalProvider } from "./fpl/signals.js";
+export { FplVortexIntelligence } from "./fpl/fpl-intelligence.js";
+export type { FplAnalyzeOptions } from "./fpl/fpl-intelligence.js";
+export { createFplAnalysisTool } from "./fpl/fpl-tool.js";
+export { FplReportMemoryBridge } from "./fpl/fpl-memory-bridge.js";
+export type { FplMemoryCoordinates } from "./fpl/fpl-memory-bridge.js";
+export { FPL_RULES_2026_27, chipRemaining, freshChipInventory } from "./fpl/rules.js";
+export type {
+  BacktestResult,
+  CaptainCandidate,
+  ChipCandidate,
+  ChipInventory,
+  ChipName,
+  ChipPlan,
+  FplAnalysisReport,
+  FplDataSnapshot,
+  FplFixture,
+  FplPlayer,
+  FplPosition,
+  FplSeasonRules,
+  FplTeam,
+  GameweekInfo,
+  HorizonProjection,
+  LineupPlan,
+  PlayerProjection,
+  PriceMovementSignal,
+  ProjectionComponents,
+  SimulationSummary,
+  SquadState,
+  TransferMove,
+  TransferPlan,
+} from "./fpl/types.js";
