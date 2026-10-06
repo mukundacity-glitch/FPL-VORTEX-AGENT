@@ -89,6 +89,8 @@ export interface SquadState {
   bank: number;
   freeTransfers: number;
   chips: ChipInventory;
+  /** Optional exact selling prices in £m. When omitted, current market price is used as a conservative approximation. */
+  sellingPrices?: Readonly<Record<number, number>>;
 }
 
 export interface ProjectionComponents {
