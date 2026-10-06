@@ -27,7 +27,7 @@ function player(id: number, position: FplPosition, teamId: number, boost = 0): F
 function snapshot(): FplDataSnapshot {
   const players: FplPlayer[] = [];
   let id = 1;
-  const add = (position: FplPosition, count: number) => { for (let i = 0; i < count; i += 1) { players.push(player(id, position, ((id - 1) % 6) + 1, id > 15 ? 18 : i)); id += 1; } };
+  const add = (position: FplPosition, count: number) => { for (let i = 0; i < count; i += 1) { players.push(player(id, position, ((id - 1) % 5) + 1, id > 15 ? 18 : i)); id += 1; } };
   add(1, 3); add(2, 7); add(3, 7); add(4, 5);
   const teams = Array.from({ length: 6 }, (_, index) => ({ id: index + 1, name: `Team ${index + 1}`, shortName: `T${index + 1}`, strength: 3 }));
   const fixtures = [5, 6, 7].flatMap((gw, offset) => [
