@@ -1,5 +1,5 @@
 import { chipRemaining, FPL_RULES_2026_27 } from "./rules.js";
-import type { ChipCandidate, ChipPlan, FplSeasonRules, HorizonProjection, LineupPlan, SquadState } from "./types.js";
+import type { ChipCandidate, ChipName, ChipPlan, FplSeasonRules, HorizonProjection, LineupPlan, SquadState } from "./types.js";
 
 export interface ChipPlannerInput {
   squad: SquadState;
@@ -12,6 +12,27 @@ export interface ChipPlannerInput {
 
 export class ChipPlanner {
   public constructor(private readonly rules: FplSeasonRules = FPL_RULES_2026_27) {}
+
+  private schedule(candidates: readonly ChipCandidate[], squad: SquadState): ChipCandidate[] {
+    const usedGameweeks = new Set<number>();
+    const usedByHalf = new Map<string, number>();
+    const selected: ChipCandidate[] = [];
+    for (const candidate of candidates) {
+      if (usedGameweeks.has(candidate.gameweek)) continue;
+      const half = candidate.gameweek <= this.rules.firstHalfLastGameweek ? "first" : "second";
+      const key = `${half}:${candidate.chip}`;
+      const inventory = chipRemaining(squad.chips, candidate.chip, candidate.gameweek, this.rules);
+      if ((usedByHalf.get(key) ?? 0) >= inventory) continue;
+      if (this.rules.freeHitGw19Gw20Restriction && candidate.chip === "free_hit") {
+        const conflicts = selected.some((item) => item.chip === "free_hit" && ((item.gameweek === 19 && candidate.gameweek === 20) || (item.gameweek === 20 && candidate.gameweek === 19)));
+        if (conflicts) continue;
+      }
+      selected.push(candidate);
+      usedGameweeks.add(candidate.gameweek);
+      usedByHalf.set(key, (usedByHalf.get(key) ?? 0) + 1);
+    }
+    return selected.sort((a, b) => a.gameweek - b.gameweek);
+  }
 
   public plan(input: ChipPlannerInput): ChipPlan {
     const projectionMap = new Map(input.projections.map((p) => [p.playerId, p]));
@@ -37,6 +58,8 @@ export class ChipPlanner {
       }
     }
     candidates.sort((a, b) => b.expectedGain - a.expectedGain);
-    return { recommended: candidates[0] ?? null, candidates };
+    const schedule = this.schedule(candidates, input.squad);
+    const recommended = candidates[0] ?? null;
+    return { recommended, schedule, candidates };
   }
 }
