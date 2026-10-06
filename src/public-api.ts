@@ -60,7 +60,9 @@ export { OpenAITranscriptionProvider, OpenAIVisionAnalyzer } from "./files/adapt
 export type { OpenAITranscriptionOptions, OpenAIVisionOptions } from "./files/adapters/openai-media.js";
 export { FfmpegVideoFrameExtractor } from "./files/adapters/ffmpeg-video-frame-extractor.js";
 export type { FfmpegVideoFrameExtractorOptions } from "./files/adapters/ffmpeg-video-frame-extractor.js";
-export type { FileDetection, FileExtractionLimits, FileHandler, FileHandlerContext, FileHandlerOutput, FileKind, FileSection, FileSource, FileUnderstanding, TranscriptionProvider, TranscriptionResult, TranscriptionSegment, VideoFrame, VideoFrameExtractor, VisionAnalyzer, VisionResult } from "./files/types.js";
+export { MarkItDownMcpConverter } from "./files/adapters/markitdown-mcp.js";
+export type { MarkItDownMcpConverterOptions } from "./files/adapters/markitdown-mcp.js";
+export type { FileDetection, FileExtractionLimits, FileHandler, FileHandlerContext, FileHandlerOutput, FileKind, FileSection, FileSource, FileUnderstanding, MarkdownConversionProvider, MarkdownConversionResult, TranscriptionProvider, TranscriptionResult, TranscriptionSegment, VideoFrame, VideoFrameExtractor, VisionAnalyzer, VisionResult } from "./files/types.js";
 
 export { FplApiClient } from "./fpl/fpl-api-client.js";
 export { FplProjectionEngine } from "./fpl/projection-engine.js";

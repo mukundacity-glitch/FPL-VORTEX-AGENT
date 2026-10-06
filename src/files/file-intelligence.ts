@@ -8,6 +8,7 @@ import type {
   FileHandlerContext,
   FileSource,
   FileUnderstanding,
+  MarkdownConversionProvider,
   TranscriptionProvider,
   VideoFrameExtractor,
   VisionAnalyzer,
@@ -24,6 +25,7 @@ export const DEFAULT_FILE_LIMITS: FileExtractionLimits = {
 
 export interface FileIntelligenceOptions {
   limits?: Partial<FileExtractionLimits>;
+  markdownConverter?: MarkdownConversionProvider;
   transcriber?: TranscriptionProvider;
   vision?: VisionAnalyzer;
   videoFrames?: VideoFrameExtractor;
@@ -46,6 +48,7 @@ function fileId(name: string, bytes: Buffer): string {
 
 export class FileIntelligence {
   private readonly limits: FileExtractionLimits;
+  private readonly markdownConverter: MarkdownConversionProvider | undefined;
   private readonly transcriber: TranscriptionProvider | undefined;
   private readonly vision: VisionAnalyzer | undefined;
   private readonly videoFrames: VideoFrameExtractor | undefined;
@@ -55,6 +58,7 @@ export class FileIntelligence {
     options: FileIntelligenceOptions = {},
   ) {
     this.limits = { ...DEFAULT_FILE_LIMITS, ...(options.limits ?? {}) };
+    this.markdownConverter = options.markdownConverter;
     this.transcriber = options.transcriber;
     this.vision = options.vision;
     this.videoFrames = options.videoFrames;
@@ -93,9 +97,40 @@ export class FileIntelligence {
     }
 
     const detection = detectFileType(source.name, source.bytes, source.mimeType);
-    const handler = this.registry.resolve(detection);
     const warnings: string[] = [];
 
+    if (this.markdownConverter?.supports(detection)) {
+      try {
+        const converted = await this.markdownConverter.convert(source, detection);
+        const clamped = clampText(converted.text, this.limits.maxTextCharacters);
+        if (clamped.truncated) {
+          warnings.push(`Extracted text truncated at ${this.limits.maxTextCharacters} characters.`);
+        }
+        return {
+          id: fileId(source.name, source.bytes),
+          name: source.name,
+          kind: detection.kind,
+          format: detection.format,
+          mimeType: detection.mimeType,
+          sizeBytes: source.bytes.length,
+          text: clamped.text,
+          sections: [{ id: "markdown", title: "Converted Markdown", kind: "markdown", text: clamped.text }],
+          metadata: {
+            detectionConfidence: detection.confidence,
+            handler: "markdown-converter",
+            ...(converted.metadata ?? {}),
+          },
+          warnings,
+          children: [],
+        };
+      } catch (error) {
+        warnings.push(
+          `Preferred Markdown conversion failed; used built-in fallback: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    const handler = this.registry.resolve(detection);
     if (!handler) {
       return {
         id: fileId(source.name, source.bytes),
@@ -107,7 +142,7 @@ export class FileIntelligence {
         text: "",
         sections: [],
         metadata: { detectionConfidence: detection.confidence },
-        warnings: [`No file handler is registered for ${detection.kind}/${detection.format}.`],
+        warnings: [...warnings, `No file handler is registered for ${detection.kind}/${detection.format}.`],
         children: [],
       };
     }

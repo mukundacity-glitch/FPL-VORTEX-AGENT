@@ -1,0 +1,2 @@
+markitdown-mcp==0.0.1a7
+markitdown[all]==0.1.8
