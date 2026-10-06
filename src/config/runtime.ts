@@ -59,8 +59,14 @@ function parseScore(value: string, fallback: number): number {
 
 export function loadRuntimeConfig(): RuntimeConfig {
   return {
-    primaryProvider: parseProvider(env("PRIMARY_PROVIDER"), "anthropic"),
-    reviewProvider: parseProvider(env("REVIEW_PROVIDER"), "openai"),
+    primaryProvider: parseProvider(
+      env("PRIMARY_PROVIDER"),
+      env("OPENAI_API_KEY") ? "openai" : "anthropic",
+    ),
+    reviewProvider: parseProvider(
+      env("REVIEW_PROVIDER"),
+      env("OPENAI_API_KEY") ? "openai" : "anthropic",
+    ),
     enableCrossModelReview: parseBoolean(
       env("ENABLE_CROSS_MODEL_REVIEW"),
       true,
@@ -69,7 +75,7 @@ export function loadRuntimeConfig(): RuntimeConfig {
     openai: {
       apiKey: env("OPENAI_API_KEY"),
       primaryModel: env("OPENAI_PRIMARY_MODEL") || "gpt-6-astra",
-      reviewModel: env("OPENAI_REVIEW_MODEL") || "gpt-6-astra",
+      reviewModel: env("OPENAI_REVIEW_MODEL") || "gpt-6-sol",
       primaryMode: parseOpenAIMode(env("OPENAI_PRIMARY_MODE"), "responses"),
       reviewMode: parseOpenAIMode(env("OPENAI_REVIEW_MODE"), "responses"),
     },

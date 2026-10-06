@@ -269,3 +269,27 @@ test("planner cannot execute write tools", async () => {
   );
   assert.equal(called, false);
 });
+
+test("one OpenAI key selects independent primary and review models automatically", () => {
+  const names = [
+    "PRIMARY_PROVIDER",
+    "REVIEW_PROVIDER",
+    "OPENAI_API_KEY",
+    "OPENAI_PRIMARY_MODEL",
+    "OPENAI_REVIEW_MODEL",
+  ];
+  const saved = names.map((name) => process.env[name]);
+  try {
+    for (const name of names) delete process.env[name];
+    process.env.OPENAI_API_KEY = "fixture-not-a-live-key";
+    const config = loadRuntimeConfig();
+    assert.equal(config.primaryProvider, "openai");
+    assert.equal(config.reviewProvider, "openai");
+    assert.notEqual(config.openai.primaryModel, config.openai.reviewModel);
+  } finally {
+    names.forEach((name, index) => {
+      if (saved[index] === undefined) delete process.env[name];
+      else process.env[name] = saved[index];
+    });
+  }
+});

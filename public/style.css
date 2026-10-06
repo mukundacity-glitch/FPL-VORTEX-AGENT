@@ -666,3 +666,24 @@ dialog input {
     height: 54px;
   }
 }
+
+.generated img,
+.generated video {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+.generated a,
+#settings-view a {
+  color: #c4b5fd;
+}
+#generation-mode {
+  width: 88px;
+  min-width: 0;
+  font-size: 16px;
+}
+.composer-bottom {
+  gap: 8px;
+}

@@ -1,6 +1,6 @@
 # Vortex AI
 
-Vortex AI turns the original FPL agent scaffold into a personal browser workspace with model routing, bounded specialist orchestration, independent review, project memory, file ingestion and FPL tools.
+Vortex AI turns the original FPL agent scaffold into a personal browser workspace with model routing, bounded specialist orchestration, independent review, project memory, file ingestion, image/video generation and optional FPL tools.
 
 This is a working foundation for the larger vision. It is not yet the complete autonomous engineering platform or a production service. See [the eight-stage implementation ledger](docs/BUILD_PROGRESS.md) for implemented behavior, limitations and remaining gates.
 
@@ -16,9 +16,11 @@ npm run check
 npm start
 ```
 
-Open http://127.0.0.1:3000. Without API keys, the interface, text/document uploads, storage and deterministic tools work; chat returns an explicit setup error. Nothing silently generates a fake AI answer.
+Open [Vortex on this computer](http://127.0.0.1:3000). Phone access requires a deployed HTTPS address. Without API keys, the interface, text/document uploads, storage and deterministic tools work; chat returns an explicit setup error. Nothing silently generates a fake AI answer.
 
-The default configuration uses Claude Haiku for short routine chat, Sonnet for balanced requests, Fable for deep reasoning and OpenAI for independent review. Coding and research use OpenAI; when its configured review model matches the candidate model, the configured Anthropic reviewer is used instead. Both providers are therefore needed for the default full workflow. Set model IDs to ones available to your account. `CODING_MODE=agents` opts into an OpenAI-hosted coding session; access, repository mounts and GitHub authorization still need provisioning.
+One OpenAI key can enable chat, independent review using a different model, research, file/media analysis and prompt-based image/video generation. Blank provider settings select the available provider automatically. Anthropic is optional; an Anthropic-only setup supports chat and extracted document/code analysis. Choose model IDs available to your account. `CODING_MODE=agents` opts into a hosted coding session; repository mounts and GitHub authorization still need provisioning.
+
+For images and video, choose **Image** or **Video** beside Send and describe the result. **Auto** recognizes “Create an image of…” and “Generate a video of…”. Saved results appear in **Files → Generated images & videos**, with private playback/download links. See [API and media setup](docs/MEDIA_AND_API.md) for defaults, costs, recovery and endpoint usage.
 
 Provider API keys belong only in `.env` or hosting secrets. This application's access token is separate from those keys. File contents and conversation context selected for a task are sent to its model providers.
 

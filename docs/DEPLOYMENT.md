@@ -57,3 +57,16 @@ Restore to a separate test directory first and run `PRAGMA integrity_check` on t
 - Logs, latency/error monitoring and usage limits are configured for the chosen host.
 
 Promote a specific tested commit or container digest. Keep the prior image and a consistent pre-migration database backup. Future schema migrations must be versioned and reversible before automatic deployment is added.
+
+## HTTPS deployment bundle
+
+`compose.yaml` and `Caddyfile` provide a persistent Node backend and HTTPS reverse proxy on a single server. Before using them:
+
+1. Install Docker with Compose on your server and point a domain's DNS at that server.
+2. Copy `.env.example` to `.env`; add your API key, `VORTEX_DOMAIN=your-domain.example`, and a random `VORTEX_AUTH_TOKEN` of at least 32 characters. Keep `.env` private. Generate a token locally with `node -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))'`.
+3. Allow inbound ports 80/443 and run `docker compose up -d --build`.
+4. Open `https://your-domain.example`, log in with the workspace token, and exercise chat, generation and downloads. Verify persistent data after restarting the containers.
+
+The backend has no directly published port. Caddy manages certificates and preserves the external Host for origin validation. All persisted conversations, media jobs and generated assets live in the `vortex-data` volume. `docker compose down` keeps volumes; do not use `down -v` unless deliberately deleting data.
+
+This bundle has not been built/run here because Docker is unavailable. No domain or hosting account has been provisioned. It is a reviewable deployment configuration, not evidence of a live public service.

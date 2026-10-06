@@ -1,0 +1,32 @@
+services:
+  vortex:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      VORTEX_DB_PATH: /data/vortex.sqlite
+      VORTEX_AUTH_TOKEN: ${VORTEX_AUTH_TOKEN:?Set a random token of at least 32 characters in .env}
+    volumes:
+      - vortex-data:/data
+  https:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      VORTEX_DOMAIN: ${VORTEX_DOMAIN:?Set your domain pointing at this server}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      vortex:
+        condition: service_healthy
+volumes:
+  vortex-data:
+  caddy-data:
+  caddy-config:

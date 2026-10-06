@@ -1,3 +1,4 @@
+import { GenerationService, OpenAIMediaProvider } from "../media/generation.js";
 import { z } from "zod";
 import { loadRuntimeConfig } from "../config/runtime.js";
 import { createProvider } from "../providers/factory.js";
@@ -167,14 +168,22 @@ const providers = {
       : new OpenAIProvider(config.openai.primaryModel, config.openai.apiKey),
   deep: () => createProvider(config.primaryProvider, "primary", config),
   coding: () =>
-    process.env.CODING_MODE === "agents"
-      ? new OpenAIAgentProvider(
+    !config.openai.apiKey
+      ? createProvider(config.primaryProvider, "primary", config)
+      : process.env.CODING_MODE === "agents"
+        ? new OpenAIAgentProvider(
+            config.openai.primaryModel,
+            config.openai.apiKey,
+          )
+        : new OpenAIProvider(config.openai.primaryModel, config.openai.apiKey),
+  research: () =>
+    config.openai.apiKey
+      ? new OpenAIProvider(
           config.openai.primaryModel,
           config.openai.apiKey,
+          true,
         )
-      : new OpenAIProvider(config.openai.primaryModel, config.openai.apiKey),
-  research: () =>
-    new OpenAIProvider(config.openai.primaryModel, config.openai.apiKey, true),
+      : createProvider(config.primaryProvider, "primary", config),
   review: (primary: import("../providers/model-provider.js").ModelProvider) => {
     const selected = createProvider(config.reviewProvider, "review", config);
     return selected.name === primary.name &&
@@ -189,7 +198,19 @@ const port = Number(process.env.PORT ?? 3000),
   host = process.env.HOST ?? "127.0.0.1";
 if (!Number.isInteger(port) || port < 1 || port > 65535)
   throw new Error("Invalid PORT.");
+const imageModel = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-2.5-flare";
+const videoModel = process.env.OPENAI_VIDEO_MODEL ?? "sora-2";
+if (videoModel !== "sora-2" && videoModel !== "sora-2-pro")
+  throw new Error("Unsupported OPENAI_VIDEO_MODEL.");
 const app = createApp({
+  generations: new GenerationService(
+    store,
+    config.openai.apiKey
+      ? new OpenAIMediaProvider(config.openai.apiKey, imageModel, videoModel)
+      : undefined,
+    imageModel,
+    videoModel,
+  ),
   store,
   files: new FileEngine(
     new MediaParser(
@@ -206,7 +227,9 @@ const app = createApp({
     tools,
   ),
   tools,
-  configured: !!(config.openai.apiKey || config.anthropic.apiKey),
+  configured: !!(config.primaryProvider === "openai"
+    ? config.openai.apiKey
+    : config.anthropic.apiKey),
   ...(process.env.VORTEX_AUTH_TOKEN
     ? { authToken: process.env.VORTEX_AUTH_TOKEN }
     : {}),

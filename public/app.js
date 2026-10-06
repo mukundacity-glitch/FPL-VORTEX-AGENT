@@ -1,3 +1,4 @@
+import { generationKind } from "./generation-intent.js";
 import { consumeChatEvents } from "./chat-stream.js";
 const $ = (s) => document.querySelector(s);
 let project = "general",
@@ -5,6 +6,9 @@ let project = "general",
   busy = false,
   selectedFiles = new Map(),
   status = null;
+const generationCards = new Map();
+const galleryCards = new Map();
+let mediaRefreshing = false;
 const api = async (path, options = {}) => {
   const response = await fetch(path, {
     ...options,
@@ -157,13 +161,19 @@ async function refresh() {
     option.textContent = tool.name;
     $("#tool-name").append(option);
   }
-  await Promise.all([chats(), files()]);
+  $("#media-status").textContent = status.media?.configured
+    ? `Media key configured; model access unverified. Image: ${status.media.imageModel}. Video: ${status.media.videoModel}.`
+    : "Image and video generation need OPENAI_API_KEY on the server.";
+  await Promise.all([chats(), files(), refreshGenerations()]);
 }
 function reset() {
   chatId = null;
   selectedFiles.clear();
   attachments();
   $("#messages").replaceChildren();
+  generationCards.clear();
+  galleryCards.clear();
+  $("#generation-list").replaceChildren();
   $("#welcome").hidden = false;
   $("#progress-panel").hidden = true;
   $("#page-title").textContent = "New conversation";
@@ -248,6 +258,72 @@ $("#file-input").onchange = async () => {
   $("#file-input").value = "";
   await files();
 };
+function renderGeneration(job, card) {
+  const stateKey = JSON.stringify([job.status, job.progress, job.error]);
+  if (card.dataset.state === stateKey) return;
+  card.dataset.state = stateKey;
+  card.replaceChildren();
+  const label = document.createElement("small");
+  label.textContent = `${job.kind === "image" ? "IMAGE" : "VIDEO"} · ${job.model}`;
+  const prompt = document.createElement("p");
+  prompt.textContent = job.prompt;
+  card.append(label, prompt);
+  if (job.status === "completed") {
+    const assetUrl = `${scoped(`/api/generations/${job.id}/asset`)}`;
+    const media = document.createElement(
+      job.kind === "image" ? "img" : "video",
+    );
+    media.src = assetUrl;
+    if (job.kind === "image") {
+      media.alt = job.prompt;
+      media.loading = "lazy";
+    } else {
+      media.controls = true;
+      media.preload = "metadata";
+    }
+    const download = document.createElement("a");
+    download.href = `${assetUrl}&download=1`;
+    download.textContent = "Download result";
+    download.download = `vortex-${job.id}.${job.kind === "image" ? "png" : "mp4"}`;
+    card.append(media, download);
+  } else {
+    const state = document.createElement("p");
+    state.textContent =
+      job.error || `${job.status.replaceAll("_", " ")} · ${job.progress}%`;
+    card.append(state);
+  }
+}
+async function refreshGenerations() {
+  if (mediaRefreshing) return;
+  mediaRefreshing = true;
+  const workspace = project;
+  try {
+    const jobs = await api(scoped("/api/generations"));
+    if (workspace !== project) return;
+    const area = $("#generation-list");
+    for (let job of jobs) {
+      if (["queued", "in_progress"].includes(job.status)) {
+        job = await api(scoped(`/api/generations/${job.id}`));
+        if (workspace !== project) return;
+      }
+      let card = galleryCards.get(job.id);
+      if (!card) {
+        card = document.createElement("article");
+        card.className = "card generated";
+        galleryCards.set(job.id, card);
+        area.append(card);
+      }
+      renderGeneration(job, card);
+      const inline = generationCards.get(job.id);
+      if (inline) renderGeneration(job, inline);
+    }
+  } finally {
+    mediaRefreshing = false;
+  }
+}
+setInterval(() => {
+  if (status && !document.hidden) refreshGenerations().catch(() => {});
+}, 10000);
 $("#composer").onsubmit = async (event) => {
   event.preventDefault();
   const message = $("#message").value.trim();
@@ -262,6 +338,29 @@ $("#composer").onsubmit = async (event) => {
   $("#progress-panel summary").textContent = "Vortex is working";
   const stages = new Map();
   try {
+    const kind = generationKind(message, $("#generation-mode").value);
+    if (kind) {
+      if (selectedFiles.size)
+        throw new Error(
+          "Prompt generation does not use attachments yet. Remove attachments or select Chat to analyze them.",
+        );
+      const job = await api("/api/generations", {
+        method: "POST",
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          project,
+          kind,
+          prompt: message,
+        }),
+      });
+      const card = appendMessage("assistant", "");
+      card.classList.add("generated");
+      generationCards.set(job.id, card);
+      renderGeneration(job, card);
+      $("#progress-panel").hidden = true;
+      await refreshGenerations();
+      return;
+    }
     if (status?.configured === false) {
       throw new Error(
         "Chat setup is incomplete. Add a provider API key in the server settings (.env), then restart Vortex.",

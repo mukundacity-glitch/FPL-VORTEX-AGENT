@@ -101,11 +101,13 @@
             ></textarea>
             <div class="composer-bottom">
               <button type="button" id="upload">＋ Attach files</button
-              ><input id="file-input" type="file" multiple hidden /><button
-                id="send"
-                type="submit"
-                aria-label="Send message"
-              >
+              ><input id="file-input" type="file" multiple hidden />
+              <select id="generation-mode" aria-label="Response type">
+                <option value="auto">Auto</option>
+                <option value="chat">Chat</option>
+                <option value="image">Image</option>
+                <option value="video">Video</option></select
+              ><button id="send" type="submit" aria-label="Send message">
                 ↑
               </button>
             </div>
@@ -125,6 +127,12 @@
         </p>
         <button id="upload-files" class="new">＋ Upload files</button>
         <div id="file-list"></div>
+        <h2>Generated images & videos</h2>
+        <p>
+          Saved in this workspace. Video clips are 4 seconds. Generation uses
+          your API billing.
+        </p>
+        <div id="generation-list"></div>
         <p class="muted">
           10 MiB per file. Media needs OpenAI credentials; video also needs
           ffmpeg. Unsupported formats return an explanation.
@@ -149,6 +157,32 @@
         <p class="eyebrow">YOUR WORKSPACE</p>
         <h1>Keep control.</h1>
         <div id="settings-info"></div>
+        <ol>
+          <li>
+            <a
+              href="https://platform.openai.com/api-keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Create an OpenAI API key</a
+            >
+            and enable API billing on your account.
+          </li>
+          <li>
+            On the server, copy .env.example to .env and set OPENAI_API_KEY.
+            Restart with npm start.
+          </li>
+          <li>
+            Choose Image or Video beside the send button, or type “Create an
+            image of…” or “Generate a video of…”. Account access to each model
+            is required.
+          </li>
+        </ol>
+        <p id="media-status"></p>
+        <p>
+          The address shown in your browser opens this workspace. A localhost
+          address works on the computer running Vortex. A phone needs a deployed
+          HTTPS address.
+        </p>
         <p>
           Set model IDs and provider keys in the server’s .env file. Keys stay
           on the server.

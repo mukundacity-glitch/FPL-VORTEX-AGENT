@@ -1,3 +1,4 @@
+import { GenerationService } from "../dist/media/generation.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Store } from "../dist/memory/store.js";
@@ -26,6 +27,17 @@ async function app(t, options = {}) {
         };
       },
     },
+    generations: new GenerationService(
+      store,
+      {
+        image: async () => Buffer.from("test-image-asset"),
+        startVideo: async () => "provider-id",
+        video: async () => ({ status: "completed", progress: 100 }),
+        download: async () => Buffer.from("test-video-asset"),
+      },
+      "test-image",
+      "test-video",
+    ),
     configured: true,
     ...options,
   });
@@ -146,4 +158,67 @@ test("local server rejects DNS rebinding hostnames", async (t) => {
     req.end();
   });
   assert.equal(code, 403);
+});
+
+test("media endpoints enforce login and project scoping and support ranged assets", async (t) => {
+  const { base } = await app(t, { authToken: token });
+  const id = crypto.randomUUID();
+  const request = { id, project: "general", kind: "video", prompt: "Rain" };
+  assert.equal(
+    (await fetch(`${base}/api/generations`, post(request))).status,
+    401,
+  );
+  const login = await fetch(`${base}/api/login`, post({ token }));
+  const headers = { Cookie: login.headers.get("set-cookie").split(";")[0] };
+  const create = await fetch(`${base}/api/generations`, {
+    ...post(request),
+    headers: { ...post(request).headers, ...headers },
+  });
+  assert.equal(create.status, 202);
+  await new Promise((resolve) => setImmediate(resolve));
+  const state = await (
+    await fetch(`${base}/api/generations/${id}`, { headers })
+  ).json();
+  assert.equal(state.status, "completed");
+  assert(!("providerId" in state));
+  assert.equal(
+    (await fetch(`${base}/api/generations/${id}?project=other`, { headers }))
+      .status,
+    404,
+  );
+  assert.equal(
+    (
+      await fetch(`${base}/api/generations/${id}/asset?project=other`, {
+        headers,
+      })
+    ).status,
+    404,
+  );
+  assert.equal(
+    (await fetch(`${base}/api/generations/${id}/asset`)).status,
+    401,
+  );
+  const asset = await fetch(`${base}/api/generations/${id}/asset`, {
+    headers: { ...headers, Range: "bytes=0-3" },
+  });
+  assert.equal(asset.status, 206);
+  assert.equal(await asset.text(), "test");
+  assert.match(asset.headers.get("content-range"), /^bytes 0-3\//);
+  assert.equal(
+    (
+      await fetch(`${base}/api/generations/${id}/asset`, {
+        headers: { ...headers, Range: "bytes=999-" },
+      })
+    ).status,
+    416,
+  );
+});
+test("media setup errors and input validation are actionable", async (t) => {
+  const { base } = await app(t, { generations: undefined });
+  const response = await fetch(
+    `${base}/api/generations`,
+    post({ id: crypto.randomUUID(), kind: "image", prompt: "forest" }),
+  );
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /OPENAI_API_KEY/);
 });

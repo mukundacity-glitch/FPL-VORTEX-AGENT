@@ -1,3 +1,4 @@
+import { GenerationService, publicGeneration } from "../media/generation.js";
 import {
   createServer,
   type IncomingMessage,
@@ -22,6 +23,7 @@ export interface AppOptions {
   authToken?: string;
   publicAccess?: boolean;
   configured: boolean;
+  generations?: GenerationService;
 }
 const scopeInput = z.object({
   project: z
@@ -104,7 +106,7 @@ export function createApp(options: AppOptions) {
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     );
     try {
       const host = req.headers.host;
@@ -135,7 +137,13 @@ export function createApp(options: AppOptions) {
         return;
       }
       if (
-        ["/", "/app.js", "/chat-stream.js", "/style.css"].includes(path) &&
+        [
+          "/",
+          "/app.js",
+          "/chat-stream.js",
+          "/generation-intent.js",
+          "/style.css",
+        ].includes(path) &&
         req.method === "GET"
       ) {
         const file = path === "/" ? "index.html" : path.slice(1);
@@ -205,11 +213,115 @@ export function createApp(options: AppOptions) {
       if (path === "/api/status" && req.method === "GET") {
         send(res, 200, {
           configured: options.configured,
+          media: {
+            configured: options.generations?.configured ?? false,
+            imageModel: options.generations?.imageModel,
+            videoModel: options.generations?.videoModel,
+          },
           agents,
           tools: options.tools.list(),
           storage: "SQLite · personal workspace",
           review: "Required for complex tasks",
         });
+        return;
+      }
+      if (path === "/api/generations" && req.method === "GET") {
+        send(
+          res,
+          200,
+          (options.generations?.list(scope(url)) ?? []).map(publicGeneration),
+        );
+        return;
+      }
+      if (path === "/api/generations" && req.method === "POST") {
+        if (!options.generations?.configured) {
+          send(res, 503, {
+            error:
+              "Add OPENAI_API_KEY in the server .env file and restart to generate images and video.",
+          });
+          return;
+        }
+        const input = scopeInput
+          .extend({
+            id: z.string().uuid(),
+            kind: z.enum(["image", "video"]),
+            prompt: z.string().trim().min(1).max(4000),
+          })
+          .parse(await body(req, 20000));
+        const job = options.generations.create(
+          { owner: "personal", project: input.project },
+          input.id,
+          input.kind,
+          input.prompt,
+        );
+        send(res, 202, publicGeneration(job));
+        return;
+      }
+      const generationMatch = path.match(
+        /^\/api\/generations\/([a-f0-9-]{36})(\/asset)?$/,
+      );
+      if (generationMatch && req.method === "GET" && options.generations) {
+        const workspace = scope(url),
+          id = generationMatch[1]!;
+        const job = options.store.generation(workspace, id);
+        if (!job) {
+          send(res, 404, { error: "Generation not found in this project." });
+          return;
+        }
+        if (!generationMatch[2]) {
+          send(
+            res,
+            200,
+            publicGeneration(await options.generations.get(workspace, id)),
+          );
+          return;
+        }
+        const asset = options.store.generationAsset(workspace, id);
+        if (!asset || job.status !== "completed") {
+          send(res, 404, { error: "Result is not available yet." });
+          return;
+        }
+        const extension = job.kind === "video" ? "mp4" : "png";
+        res.setHeader(
+          "Content-Type",
+          job.kind === "video" ? "video/mp4" : "image/png",
+        );
+        res.setHeader(
+          "Content-Disposition",
+          `${url.searchParams.has("download") ? "attachment" : "inline"}; filename="vortex-${id}.${extension}"`,
+        );
+        res.setHeader("Accept-Ranges", "bytes");
+        const range = req.headers.range;
+        if (range) {
+          const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+          const start = match?.[1]
+            ? Number(match[1])
+            : Math.max(0, asset.length - Number(match?.[2]));
+          const end =
+            match?.[1] && match[2]
+              ? Math.min(Number(match[2]), asset.length - 1)
+              : asset.length - 1;
+          if (
+            !match ||
+            (!match[1] && !match[2]) ||
+            start > end ||
+            start >= asset.length ||
+            !Number.isSafeInteger(start) ||
+            !Number.isSafeInteger(end)
+          ) {
+            res.writeHead(416, { "Content-Range": `bytes */${asset.length}` });
+            res.end();
+            return;
+          }
+          res.writeHead(206, {
+            "Content-Range": `bytes ${start}-${end}/${asset.length}`,
+            "Content-Length": end - start + 1,
+          });
+          res.end(asset.subarray(start, end + 1));
+          return;
+        }
+        res.setHeader("Content-Length", asset.length);
+        res.end(asset);
         return;
       }
       if (path === "/api/chats" && req.method === "GET") {

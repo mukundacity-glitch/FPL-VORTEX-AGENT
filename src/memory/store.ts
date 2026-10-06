@@ -1,3 +1,4 @@
+import type { Generation } from "../media/generation.js";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -36,9 +37,62 @@ export class Store {
       CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY,chat TEXT REFERENCES chats(id) ON DELETE CASCADE,role TEXT NOT NULL,text TEXT NOT NULL,createdAt TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS files(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project TEXT NOT NULL,name TEXT NOT NULL,kind TEXT NOT NULL,text TEXT NOT NULL,warnings TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS memories(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project TEXT NOT NULL,kind TEXT NOT NULL,text TEXT NOT NULL,source TEXT NOT NULL,createdAt TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS generations(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project TEXT NOT NULL,data TEXT NOT NULL,asset BLOB);
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project TEXT NOT NULL,chat TEXT NOT NULL,result TEXT NOT NULL,createdAt TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS memory_scope ON memories(owner,project,kind);
       CREATE INDEX IF NOT EXISTS chat_scope ON chats(owner,project);`);
+  }
+  generation(scope: Scope, id: string): Generation | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT data FROM generations WHERE id=? AND owner=? AND project=?",
+      )
+      .get(id, scope.owner, scope.project);
+    return row ? (JSON.parse(row.data as string) as Generation) : undefined;
+  }
+  generations(scope: Scope): Generation[] {
+    return this.db
+      .prepare(
+        "SELECT data FROM generations WHERE owner=? AND project=? ORDER BY rowid DESC LIMIT 100",
+      )
+      .all(scope.owner, scope.project)
+      .map((row) => JSON.parse(row.data as string) as Generation);
+  }
+  activeGenerations(owner: string): number {
+    const row = this.db
+      .prepare(
+        "SELECT count(*) AS n FROM generations WHERE owner=? AND json_extract(data,'$.status') IN ('submitting','queued','in_progress')",
+      )
+      .get(owner);
+    return Number(row?.n ?? 0);
+  }
+  saveGeneration(scope: Scope, job: Generation, asset?: Buffer): void {
+    this.db
+      .prepare(
+        "INSERT INTO generations VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,asset=COALESCE(excluded.asset,generations.asset) WHERE generations.owner=excluded.owner AND generations.project=excluded.project",
+      )
+      .run(
+        job.id,
+        scope.owner,
+        scope.project,
+        JSON.stringify(job),
+        asset ?? null,
+      );
+    if (!this.generation(scope, job.id))
+      throw new Error("Request ID belongs to another project.");
+  }
+  generationAsset(scope: Scope, id: string): Buffer | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT asset FROM generations WHERE id=? AND owner=? AND project=?",
+      )
+      .get(id, scope.owner, scope.project);
+    return row?.asset ? Buffer.from(row.asset as Uint8Array) : undefined;
+  }
+  interruptGenerations(): void {
+    this.db.exec(
+      `UPDATE generations SET data=json_set(data,'$.status','failed','$.error','Server restarted before the creation result was saved. Check provider activity before creating again; the request was not repeated.') WHERE json_extract(data,'$.status')='submitting'`,
+    );
   }
   createChat(scope: Scope, title = "New chat"): Chat {
     const chat = {
