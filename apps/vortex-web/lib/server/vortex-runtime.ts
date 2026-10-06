@@ -6,6 +6,7 @@ import {
   FfmpegVideoFrameExtractor,
   JsonMemoryStore,
   KnowledgeIngestor,
+  MarkItDownMcpConverter,
   OpenAITranscriptionProvider,
   OpenAIVisionAnalyzer,
   VortexMemory,
@@ -27,12 +28,25 @@ declare global {
   var __vortexWebRuntime: VortexWebRuntime | undefined;
 }
 
+function positiveInteger(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function createRuntime(): VortexWebRuntime {
   const config = loadRuntimeConfig();
   const memoryPath = process.env.VORTEX_MEMORY_PATH?.trim()
     || path.join(os.tmpdir(), "vortex-ai", "memory.json");
   const memory = new VortexMemory(new JsonMemoryStore(memoryPath));
   const fileOptions: Parameters<typeof createDefaultFileIntelligence>[0] = {};
+  const markitdownUrl = process.env.VORTEX_MARKITDOWN_MCP_URL?.trim();
+
+  if (markitdownUrl) {
+    fileOptions.markdownConverter = new MarkItDownMcpConverter({
+      url: markitdownUrl,
+      maxBytes: positiveInteger(process.env.VORTEX_MARKITDOWN_MAX_BYTES, 25 * 1024 * 1024),
+    });
+  }
 
   if (config.openai.apiKey) {
     fileOptions.transcriber = new OpenAITranscriptionProvider({

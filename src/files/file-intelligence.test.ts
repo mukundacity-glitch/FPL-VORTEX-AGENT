@@ -7,7 +7,7 @@ import { VortexMemory } from "../memory/vortex-memory.js";
 import { createDefaultFileIntelligence } from "./default-file-intelligence.js";
 import { detectFileType } from "./file-type-detector.js";
 import { FileMemoryBridge } from "./file-memory-bridge.js";
-import type { FileSource, TranscriptionProvider, VideoFrameExtractor, VisionAnalyzer } from "./types.js";
+import type { FileSource, MarkdownConversionProvider, TranscriptionProvider, VideoFrameExtractor, VisionAnalyzer } from "./types.js";
 
 function minimalPng(width = 32, height = 16): Buffer {
   const bytes = Buffer.alloc(24);
@@ -62,6 +62,30 @@ test("preserves XLSX sheets and PPTX slides", async () => {
   assert.equal(deck.sections.length, 2);
   assert.match(deck.text, /Captain Strategy/u);
   assert.match(deck.text, /Fixture Analysis/u);
+});
+
+test("prefers an external Markdown converter for supported file types", async () => {
+  const markdownConverter: MarkdownConversionProvider = {
+    supports: (detection) => detection.format === "pdf",
+    convert: async () => ({ text: "# MarkItDown\n\nConverted document.", metadata: { converter: "test" } }),
+  };
+  const engine = createDefaultFileIntelligence({ markdownConverter });
+  const result = await engine.analyze({ name: "report.pdf", bytes: Buffer.from("%PDF-1.7\nsynthetic") });
+  assert.match(result.text, /Converted document/u);
+  assert.equal(result.metadata.handler, "markdown-converter");
+  assert.equal(result.metadata.converter, "test");
+});
+
+test("falls back to built-in handlers when Markdown conversion fails", async () => {
+  const markdownConverter: MarkdownConversionProvider = {
+    supports: () => true,
+    convert: async () => { throw new Error("sidecar unavailable"); },
+  };
+  const engine = createDefaultFileIntelligence({ markdownConverter });
+  const result = await engine.analyze({ name: "plan.txt", bytes: Buffer.from("Captain Salah") });
+  assert.match(result.text, /Captain Salah/u);
+  assert.match(result.warnings.join("\n"), /sidecar unavailable/u);
+  assert.equal(result.metadata.handler, "text");
 });
 
 test("combines audio transcript and visual video frame understanding", async () => {

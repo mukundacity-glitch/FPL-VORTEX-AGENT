@@ -54,6 +54,16 @@ export interface FileHandlerOutput {
   children?: readonly FileUnderstanding[];
 }
 
+export interface MarkdownConversionResult {
+  text: string;
+  metadata?: Readonly<Record<string, unknown>>;
+}
+
+export interface MarkdownConversionProvider {
+  supports(detection: FileDetection): boolean;
+  convert(source: FileSource, detection: FileDetection): Promise<MarkdownConversionResult>;
+}
+
 export interface FileExtractionLimits {
   maxFileBytes: number;
   maxTextCharacters: number;
