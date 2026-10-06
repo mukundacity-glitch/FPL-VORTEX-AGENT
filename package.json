@@ -1,8 +1,15 @@
 {
   "name": "fpl-vortex-agent",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
+  "types": "./dist/public-api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/public-api.d.ts",
+      "import": "./dist/public-api.js"
+    }
+  },
   "engines": {
     "node": ">=22"
   },
@@ -11,7 +18,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "test": "node --test dist/core/*.test.js dist/tools/*.test.js dist/agents/*.test.js dist/sandbox/*.test.js dist/memory/*.test.js dist/files/*.test.js dist/fpl/*.test.js",
-    "check": "npm run typecheck && npm run build && npm test"
+    "web:install": "npm --prefix apps/vortex-web install --no-audit --no-fund",
+    "web:typecheck": "npm --prefix apps/vortex-web run typecheck",
+    "web:build": "npm --prefix apps/vortex-web run build",
+    "check": "npm run typecheck && npm run build && npm test && npm run web:install && npm run web:typecheck && npm run web:build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0",
