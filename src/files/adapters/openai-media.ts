@@ -24,7 +24,8 @@ export class OpenAITranscriptionProvider implements TranscriptionProvider {
 
   public async transcribe(source: FileSource): Promise<TranscriptionResult> {
     const form = new FormData();
-    form.append("file", new Blob([source.bytes], { type: source.mimeType ?? "application/octet-stream" }), source.name);
+    const payload = Uint8Array.from(source.bytes);
+    form.append("file", new Blob([payload], { type: source.mimeType ?? "application/octet-stream" }), source.name);
     form.append("model", this.model);
     form.append("response_format", "json");
 
