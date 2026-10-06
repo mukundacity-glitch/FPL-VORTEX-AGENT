@@ -32,6 +32,8 @@ export type {
   ToolResult,
 } from "./tools/types.js";
 export { createCodeExecutionTool } from "./tools/builtin/code-execution-tool.js";
+export { createFileAnalysisTool } from "./tools/builtin/file-analysis-tool.js";
+export type { FileAnalysisToolOptions } from "./tools/builtin/file-analysis-tool.js";
 export { createBrowserTools } from "./tools/adapters/browser-tools.js";
 export { createGitHubTools, GitHubRestClient } from "./tools/adapters/github-tools.js";
 export type { GitHubClientOptions } from "./tools/adapters/github-tools.js";
@@ -105,3 +107,33 @@ export type {
   MemorySearchResult,
   MemoryWriteInput,
 } from "./memory/types.js";
+
+export { detectFileType } from "./files/file-type-detector.js";
+export { FileHandlerRegistry } from "./files/file-handler-registry.js";
+export { FileIntelligence, DEFAULT_FILE_LIMITS } from "./files/file-intelligence.js";
+export type { FileIntelligenceOptions } from "./files/file-intelligence.js";
+export { createDefaultFileIntelligence } from "./files/default-file-intelligence.js";
+export { FileMemoryBridge } from "./files/file-memory-bridge.js";
+export type { FileMemoryCoordinates, FileMemoryIngestResult } from "./files/file-memory-bridge.js";
+export { OpenAITranscriptionProvider, OpenAIVisionAnalyzer } from "./files/adapters/openai-media.js";
+export type { OpenAITranscriptionOptions, OpenAIVisionOptions } from "./files/adapters/openai-media.js";
+export { FfmpegVideoFrameExtractor } from "./files/adapters/ffmpeg-video-frame-extractor.js";
+export type { FfmpegVideoFrameExtractorOptions } from "./files/adapters/ffmpeg-video-frame-extractor.js";
+export type {
+  FileDetection,
+  FileExtractionLimits,
+  FileHandler,
+  FileHandlerContext,
+  FileHandlerOutput,
+  FileKind,
+  FileSection,
+  FileSource,
+  FileUnderstanding,
+  TranscriptionProvider,
+  TranscriptionResult,
+  TranscriptionSegment,
+  VideoFrame,
+  VideoFrameExtractor,
+  VisionAnalyzer,
+  VisionResult,
+} from "./files/types.js";
