@@ -1,3 +1,5 @@
+import type { VortexMemory } from "../memory/vortex-memory.js";
+import { MemoryContextEnricher } from "../memory/memory-context-enricher.js";
 import type { ModelProvider } from "../providers/model-provider.js";
 import { PermissionPolicyEngine, type PermissionPolicy } from "../tools/permission-policy.js";
 import { ToolRegistry } from "../tools/tool-registry.js";
@@ -11,11 +13,13 @@ export interface VortexAgentRuntimeOptions {
   permissionPolicy?: PermissionPolicy;
   approvalHandler?: ApprovalHandler;
   maxConcurrency?: number;
+  memory?: VortexMemory;
 }
 
 export class VortexAgentRuntime {
   public readonly registry: ToolRegistry;
   public readonly parallel: ParallelAgentRunner;
+  private readonly memoryEnricher: MemoryContextEnricher | undefined;
 
   public constructor(options: VortexAgentRuntimeOptions = {}) {
     this.registry = new ToolRegistry(
@@ -23,6 +27,9 @@ export class VortexAgentRuntime {
       options.approvalHandler,
     );
     this.parallel = new ParallelAgentRunner(options.maxConcurrency ?? 4);
+    this.memoryEnricher = options.memory
+      ? new MemoryContextEnricher(options.memory)
+      : undefined;
   }
 
   public registerTool(tool: AnyToolDefinition): void {
@@ -34,6 +41,11 @@ export class VortexAgentRuntime {
   }
 
   public createAgent(definition: AgentDefinition, provider: ModelProvider): ToolAgent {
-    return new ToolAgent(definition, new ModelAgentBrain(provider), this.registry);
+    return new ToolAgent(
+      definition,
+      new ModelAgentBrain(provider),
+      this.registry,
+      this.memoryEnricher,
+    );
   }
 }

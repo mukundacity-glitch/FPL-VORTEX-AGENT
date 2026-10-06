@@ -1,3 +1,4 @@
+import type { MemoryScope } from "../memory/types.js";
 import type { AnyToolDefinition, ToolResult } from "../tools/types.js";
 
 export interface AgentDefinition {
@@ -32,10 +33,30 @@ export interface AgentBrain {
   next(input: AgentBrainInput): Promise<AgentAction>;
 }
 
+export interface AgentMemoryContext {
+  tenantId: string;
+  namespace: string;
+  projectId?: string;
+  conversationId?: string;
+  fileId?: string;
+  scopes?: readonly MemoryScope[];
+  limit?: number;
+  maxCharacters?: number;
+}
+
 export interface AgentRunInput {
   objective: string;
   context?: Readonly<Record<string, unknown>>;
   taskId?: string;
+  memory?: AgentMemoryContext;
+}
+
+export interface AgentContextEnricher {
+  enrich(
+    definition: AgentDefinition,
+    input: AgentRunInput,
+    baseContext: Readonly<Record<string, unknown>>,
+  ): Promise<Readonly<Record<string, unknown>>>;
 }
 
 export interface AgentStep {

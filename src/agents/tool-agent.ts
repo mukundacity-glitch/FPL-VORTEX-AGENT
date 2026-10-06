@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { ToolRegistry } from "../tools/tool-registry.js";
 import type {
   AgentBrain,
+  AgentContextEnricher,
   AgentDefinition,
   AgentExecutionResult,
   AgentHistoryEntry,
@@ -14,11 +15,27 @@ export class ToolAgent {
     private readonly definition: AgentDefinition,
     private readonly brain: AgentBrain,
     private readonly registry: ToolRegistry,
+    private readonly contextEnricher?: AgentContextEnricher,
   ) {}
 
   public async run(input: AgentRunInput): Promise<AgentExecutionResult> {
     const taskId = input.taskId ?? randomUUID();
-    const context = input.context ?? {};
+    const baseContext = input.context ?? {};
+    let context: Readonly<Record<string, unknown>> = baseContext;
+    if (this.contextEnricher) {
+      try {
+        context = await this.contextEnricher.enrich(this.definition, input, baseContext);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          agentId: this.definition.id,
+          status: "failed",
+          steps: [],
+          error: `Context enrichment failed: ${message}`,
+        };
+      }
+    }
+
     const allowed = new Set(this.definition.allowedTools);
     const tools = this.registry.list().filter((tool) => allowed.has(tool.name));
     const history: AgentHistoryEntry[] = [];
